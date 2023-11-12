@@ -1,0 +1,12 @@
+main {
+    position: relative;
+    width: 50em;
+    display: block;
+    margin: 0 auto;
+}
+
+.deco {
+    width: 20em;
+    display: block;
+    margin: 0 auto;
+}
