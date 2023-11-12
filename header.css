@@ -1,0 +1,64 @@
+/* reset default styles for html and body */
+html, body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+}
+
+/* body styles */
+body {
+    background-color: #1a1a1a;
+    color: white;
+    overflow-x: hidden;
+    font-family: monospace;
+}
+
+/* rain overlay */
+#rain {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: -100;
+}
+
+/* header styles */
+header {
+    display: flex;
+    flex-direction: column;
+}
+
+/* logo styles */
+#logo {
+    margin-top: 0.5em;
+    align-self: center;
+    transition: all 450ms;
+}
+
+/* logo hover effects */
+#logo:hover {
+    transform: translateX(-20%);
+}
+
+/* title styles */
+#title {
+    z-index: -10;
+    align-self: center;
+    opacity: 0;
+    transform: translateY(-125%);
+    transition: all 450ms;
+}
+
+/* title and link styles */
+#title li, #title a {
+    list-style: none;
+    color: white;
+    text-decoration: none;
+}
+
+/* hover effect for logo and title interaction */
+#logo:hover + #title,
+#title:hover {
+    opacity: 1;
+    transform: translateY(-125%);
+}
