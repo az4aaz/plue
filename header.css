@@ -60,5 +60,5 @@ header {
 #logo:hover + #title,
 #title:hover {
     opacity: 1;
-    transform: translateY(-125%);
+    transform: translateY(-125%) translateX(75%);
 }
