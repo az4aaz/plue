@@ -37,25 +37,26 @@ function generateArtifacts() {
 }
 
 function generateSplash(x, y, size) {
-    const numSplashes = Math.floor(Math.random() * 3) + 1;
+    const numSplashes = Math.floor(Math.random() * 2) + 1;
 
     for (let i = 0; i < numSplashes; i++) {
         const splashSize = Math.random() * size;
-        const splashSpeed = Math.random() * 1 + 0.5;
-        const angle = Math.random() * Math.PI * 2;
+        const splashSpeed = Math.random() * 1 + 4;
+        // goind in the opposite direction of the drop
+        const angle = Math.atan2(-2, windValue);
         const splash = new Splash(x, y, splashSize, splashSpeed, angle);
 
         splashes.push(splash);
         // Remove splash from array after a certain duration
         setTimeout(() => {
             splashes.splice(splashes.indexOf(splash), 1);
-        }, 500);
+        }, 50);
     }
 }
 
 function handleSplashCollision(drop) {
     const splashSize = drop.w;
-    generateSplash(drop.a, drop.b + drop.y, splashSize);
+    generateSplash(drop.a, drop.b, splashSize);
 }
 
 function moveRaindrops() {
@@ -77,9 +78,12 @@ function moveRaindrops() {
 
     for (const splash of splashes) {
         splash.render();
+        splash.move();
+        splash.clearSplash();
+        splash.render();
         setTimeout(() => {
             splash.clearSplash();
-        }, 100);
+        }, 50);
     }
 }
 
@@ -210,7 +214,8 @@ class Splash {
     }
 
     move() {
-        // ... movement code ...
+        this.y += this.speed * Math.sin(this.angle);
+        this.x += this.speed * Math.cos(this.angle);
     }
 
     clearSplash() {
