@@ -1,12 +1,15 @@
 main {
     position: relative;
-    width: 50em;
+    min-width: 30%;
+    max-width: 50%;
     display: block;
     margin: 0 auto;
 }
 
 .deco {
-    width: 20em;
     display: block;
     margin: 0 auto;
+    width: 100%;
+    max-width: 20em;
+    height: 100%;
 }
