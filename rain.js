@@ -10,7 +10,7 @@ const CONSTANTS = {
 
 const canvas = document.getElementById(CONSTANTS.CANVAS_ID);
 const ctx = canvas.getContext("2d");
-const images = document.getElementsByTagName("img");
+const images = document.getElementsByClassName('deco')
 const mouse = { x: 0, y: 0 };
 let nbGen = 1;
 let lastScrollTop = 0;
@@ -78,12 +78,12 @@ function moveRaindrops() {
 
     for (const splash of splashes) {
         splash.render();
-        splash.move();
-        splash.clearSplash();
-        splash.render();
+        // splash.move();
+        // splash.clearSplash();
+        // splash.render();
         setTimeout(() => {
             splash.clearSplash();
-        }, 50);
+        }, 1000);
     }
 }
 
