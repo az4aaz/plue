@@ -3,6 +3,7 @@ html, body {
     width: 100%;
     min-height: 100%;
     margin: 0;
+    cursor: url("assets/img/xlarge_umbrella.png") 45 45, auto;
 }
 
 /* body styles */
@@ -11,6 +12,7 @@ body {
     color: white;
     overflow-x: hidden;
     font-family: monospace;
+    /* set the cursor to the umbrella image */
 }
 
 /* rain overlay */
