@@ -6,12 +6,14 @@ const nbGenMin = 1;
 const maxWidth = 3;
 const mouseRadius = 45;
 const raindrops = [];
+const splashes = [];
 const raindrop_color = "rgba(255, 255, 255, 0.3)";
 const mouse = { x: 0, y: 0 };
+const images = document.getElementsByTagName("img");
 let nbGen = 1;
+let lastScrollTop = 0;
 let falling_speed;
 let windValue;
-let lastScrollTop = 0;
 
 function set_wind_value(wind_speed) {
     windValue = wind_speed !== 0 ? 1 / wind_speed * 30 : 0;
@@ -20,7 +22,7 @@ function set_wind_value(wind_speed) {
 
 function generate_artifacts() {
     let randomY = Math.random() * lineSize;
-    let randomA = (Math.random() * (2 * ctx.canvas.width)) - ctx.canvas.width;
+    let randomA = (Math.random() * (ctx.canvas.height + ctx.canvas.width)) - ctx.canvas.height;
     let randomB = -lineSize;
     let randomWidth = Math.random() * maxWidth;
     let angle = Math.atan2(2, windValue);
@@ -50,15 +52,59 @@ function clear_artifacts(position) {
     );
 }
 
+function generateSplash(x, y, size) {
+    const numSplashes = Math.floor(Math.random() * 3) + 1;
+
+    for (let i = 0; i < numSplashes; i++) {
+        const splashSize = Math.random() * size;
+        const splashSpeed = Math.random() * 1 + 0.5;
+        const angle = Math.random() * Math.PI * 2;
+        const splash = {
+            x: x + Math.cos(angle) * splashSize,
+            y: y + Math.sin(angle) * splashSize,
+            size: splashSize,
+            speed: splashSpeed,
+            angle: angle,
+        };
+
+        splashes.push(splash);
+        // Remove splash from array after a certain duration
+        setTimeout(() => {
+            splashes.splice(splashes.indexOf(splash), 1);
+            clear_artifacts(splash);
+        }, 500);
+    }
+}
+
+function handleSplashCollision(drop) {
+    const splashSize = drop.w ;
+    generateSplash(drop.a, drop.b + drop.y, splashSize);
+}
+
+
 function move_raindrops() {
     for (const drop of raindrops) {
         clear_artifacts(drop);
         drop.b += falling_speed * Math.sin(drop.angle);
         drop.a += falling_speed * Math.cos(drop.angle);
 
-        // if the drop is still on the canvas and doesn't encounter the mouse
-        // then draw it (round collision)
-        if (drop.a <= ctx.canvas.width && drop.b <= ctx.canvas.height - 50) {
+        // if the drop is still on the canvas
+        // don't touch any image of the page
+        if (
+            drop.a <= ctx.canvas.width &&
+            drop.b <= ctx.canvas.height - 50 &&
+            !Array.from(images).some(image => {
+                let rect = image.getBoundingClientRect();
+                return (
+                    drop.a <= rect.right + 10 &&
+                    drop.a >= rect.left - 10 &&
+                    drop.b <= rect.bottom &&
+                    drop.b >= rect.top - 10
+                )
+            })
+            )
+        {
+            // if the drop is not in the mouse radius
             if (
                 drop.a <= mouse.x - mouseRadius ||
                 drop.a >= mouse.x + mouseRadius ||
@@ -79,21 +125,20 @@ function move_raindrops() {
                 raindrops.splice(raindrops.indexOf(drop), 1);
             }
         } else {
-            // create little pixelated splashes on the ground
-            ctx.fillStyle = raindrop_color;
-            ctx.beginPath();
-            ctx.rect(drop.a, drop.b, 2, 2);
-            ctx.fill();
-            ctx.closePath();
-
-            // make the splash disappear after 1s
-            setTimeout(() => {
-                clear_artifacts(drop);
-            }, 1000);
-
-            // remove the drop from the array
             raindrops.splice(raindrops.indexOf(drop), 1);
+            handleSplashCollision(drop);
         }
+    }
+
+    // Render splashes
+    for (const splash of splashes) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(splash.x, splash.y, splash.size, splash.size);
+        ctx.fillStyle = raindrop_color;
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
     }
 }
 
