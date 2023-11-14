@@ -42,7 +42,7 @@ function generateSplash(x, y, size) {
     for (let i = 0; i < numSplashes; i++) {
         const splashSize = Math.random() * size;
         const splashSpeed = Math.random() * 1 + 4;
-        // goind in the opposite direction of the drop
+        // going in the opposite direction of the drop
         const angle = Math.atan2(-2, windValue);
         const splash = new Splash(x, y, splashSize, splashSpeed, angle);
 
@@ -61,7 +61,7 @@ function handleSplashCollision(drop) {
 
 function moveRaindrops() {
     for (const drop of raindrops) {
-        drop.clearRaindrop();
+        clearCanvas(drop.a - (drop.w * 2), drop.b - (drop.w * 2), Math.cos(drop.angle) * drop.y + (drop.w * 4), Math.sin(drop.angle) * drop.y + (drop.w * 4));
         drop.move();
 
         if (drop.isOnCanvas() && !drop.isOverlappingImage(images)) {
@@ -77,10 +77,11 @@ function moveRaindrops() {
     }
 
     for (const splash of splashes) {
+        clearCanvas(splash.x - 5, splash.y - 5, splash.size + 10, splash.size + 10);
         splash.render();
-        // splash.move();
-        // splash.clearSplash();
-        // splash.render();
+        splash.move();
+        splash.clearSplash();
+        splash.render();
         setTimeout(() => {
             splash.clearSplash();
         }, 1000);
@@ -183,22 +184,24 @@ class Raindrop {
     }
 
     clearRaindrop() {
-        ctx.clearRect(
-            this.a - (this.w * 2),
-            this.b - (this.w * 2),
-            Math.cos(this.angle) * this.y + (this.w * 4),
-            Math.sin(this.angle) * this.y + (this.w * 4)
-        );
+        clearCanvas(this.a - (this.w * 2), this.b - (this.w * 2), Math.cos(this.angle) * this.y + (this.w * 4), Math.sin(this.angle) * this.y + (this.w * 4));
     }
 
     isOverlappingImage(images) {
+        const raindropRect = {
+            left: this.a - (this.w * 2),
+            right: this.a + Math.cos(this.angle) * this.y + (this.w * 2),
+            top: this.b - (this.w * 2),
+            bottom: this.b + Math.sin(this.angle) * this.y + (this.w * 2)
+        };
+
         return Array.from(images).some(image => {
             let rect = image.getBoundingClientRect();
             return (
-                this.a <= rect.right + 10 &&
-                this.a >= rect.left - 10 &&
-                this.b <= rect.bottom &&
-                this.b >= rect.top - 10
+                raindropRect.a <= rect.right + 10 &&
+                raindropRect.a >= rect.left - 10 &&
+                raindropRect.b <= rect.bottom &&
+                raindropRect.b >= rect.top - 10
             );
         });
     }
@@ -219,7 +222,7 @@ class Splash {
     }
 
     clearSplash() {
-        ctx.clearRect(this.x - 5, this.y - 5, this.size + 10, this.size + 10);
+        clearCanvas(this.x - 5, this.y - 5, this.size + 10, this.size + 10);
     }
 
     render() {
@@ -231,4 +234,8 @@ class Splash {
         ctx.closePath();
         ctx.restore();
     }
+}
+
+function clearCanvas(x, y, width, height) {
+    ctx.clearRect(x, y, width, height);
 }
