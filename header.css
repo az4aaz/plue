@@ -21,7 +21,17 @@ body {
     top: 0;
     left: 0;
     pointer-events: none;
+    z-index: -99;
+}
+
+/* street lamp img*/
+#street-lamp {
+    position: fixed;
+    bottom: 2.5%;
+    right: 0;
+    pointer-events: none;
     z-index: -100;
+    width: 20%;
 }
 
 /* header styles */

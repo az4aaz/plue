@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Set up initial canvas size
     resizeCanvas();
 
-    lightSource = new LightSource(ctx.canvas.width - 100, groundLevel, ctx.canvas.width * 0.2);
+    lightSource = new LightSource(ctx.canvas.width - 158, groundLevel + 148, ctx.canvas.width * 0.2);
     // Generate raindrops
     animate();
     // Handle window resize
@@ -142,8 +142,8 @@ class LightSource {
 
     render() {
         ctx.beginPath();
-        ctx.arc(this.x, this.y - this.brightness, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+        ctx.rect(this.x, this.y - this.brightness, 3, 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.fill();
         ctx.closePath();
     }
