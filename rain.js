@@ -6,51 +6,45 @@ const CONSTANTS = {
     MAX_WIDTH: 3,
     MOUSE_RADIUS: 45,
     RAINDROP_COLOR: "rgba(255, 255, 255, 0.3)",
+    SPLASH_DURATION: 100
 };
 
 const canvas = document.getElementById(CONSTANTS.CANVAS_ID);
 const ctx = canvas.getContext("2d");
-const images = document.getElementsByClassName('deco')
+const images = document.getElementsByClassName('deco');
 const mouse = { x: 0, y: 0 };
-let nbGen = 1;
-let lastScrollTop = 0;
-let falling_speed;
-let windValue;
 const raindrops = [];
 const splashes = [];
 
-function setWindValue(wind_speed) {
-    windValue = wind_speed !== 0 ? 1 / wind_speed * 30 : 0;
-    falling_speed = wind_speed * 1.5;
-}
+let nbGen = 1;
+let lastScrollTop = 0;
+let groundLevel;
+let angle;
+let angleSplash;
+let falling_speed;
+let windSpeed;
+let maxDistance;
+let lightSource;
 
 function generateArtifacts() {
     for (let i = 0; i < nbGen; i++) {
         let randomY = Math.random() * CONSTANTS.LINE_SIZE;
-        let randomA = (Math.random() * (ctx.canvas.height + ctx.canvas.width)) - ctx.canvas.height;
-        let randomB = -CONSTANTS.LINE_SIZE;
+        let aLocation = (Math.random() * (ctx.canvas.height + ctx.canvas.width)) - ctx.canvas.height;
+        let bLocation = -CONSTANTS.LINE_SIZE;
         let randomWidth = Math.random() * CONSTANTS.MAX_WIDTH;
-        let angle = Math.atan2(2, windValue);
 
-        raindrops.push(new Raindrop(randomY, randomA, randomB, randomWidth, angle));
+        raindrops.push(new Raindrop(randomY, aLocation, bLocation, randomWidth));
     }
 }
 
 function generateSplash(x, y, size) {
-    const numSplashes = Math.floor(Math.random() * 2) + 1;
+    const numSplashes = Math.floor(Math.random()) + 1;
 
     for (let i = 0; i < numSplashes; i++) {
         const splashSize = Math.random() * size;
-        const splashSpeed = Math.random() * 1 + 4;
-        // going in the opposite direction of the drop
-        const angle = Math.atan2(-2, windValue);
-        const splash = new Splash(x, y, splashSize, splashSpeed, angle);
+        const splashSpeed = Math.random() * 2;
 
-        splashes.push(splash);
-        // Remove splash from array after a certain duration
-        setTimeout(() => {
-            splashes.splice(splashes.indexOf(splash), 1);
-        }, 50);
+        splashes.push(new Splash(x, y, splashSize, splashSpeed));
     }
 }
 
@@ -61,41 +55,29 @@ function handleSplashCollision(drop) {
 
 function moveRaindrops() {
     for (const drop of raindrops) {
-        clearCanvas(drop.a - (drop.w * 2), drop.b - (drop.w * 2), Math.cos(drop.angle) * drop.y + (drop.w * 4), Math.sin(drop.angle) * drop.y + (drop.w * 4));
-        drop.move();
-
-        if (drop.isOnCanvas() && !drop.isOverlappingImage(images)) {
-            if (drop.isInMouseRadius()) {
-                raindrops.splice(raindrops.indexOf(drop), 1);
-            } else {
-                drop.render();
-            }
-        } else {
-            raindrops.splice(raindrops.indexOf(drop), 1);
-            handleSplashCollision(drop);
-        }
+        drop.update();
     }
+}
 
+function moveSplashes() {
     for (const splash of splashes) {
-        clearCanvas(splash.x - 5, splash.y - 5, splash.size + 10, splash.size + 10);
-        splash.render();
-        splash.move();
-        splash.clearSplash();
-        splash.render();
-        setTimeout(() => {
-            splash.clearSplash();
-        }, 1000);
+        splash.update();
     }
 }
 
 function resizeCanvas() {
     ctx.canvas.width = window.innerWidth;
     ctx.canvas.height = window.innerHeight;
+    groundLevel = ctx.canvas.height - 50;
 }
 
 function animate() {
+    clearCanvas(0, 0, ctx.canvas.width, ctx.canvas.height);
+
     generateArtifacts();
+    lightSource.render();
     moveRaindrops();
+    moveSplashes();
     requestAnimationFrame(animate);
 }
 
@@ -109,6 +91,8 @@ document.addEventListener('DOMContentLoaded', function () {
     fetchWindData();
     // Set up initial canvas size
     resizeCanvas();
+
+    lightSource = new LightSource(ctx.canvas.width - 100, groundLevel, ctx.canvas.width * 0.2);
     // Generate raindrops
     animate();
     // Handle window resize
@@ -117,12 +101,18 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener("scroll", handleScroll);
 });
 
+function setWindSpeed(windSpeed) {
+    angle = Math.PI / 2 - Math.atan(windSpeed / 100);
+    falling_speed = windSpeed;
+    angleSplash = 2 * Math.PI - angle;
+}
+
 function fetchWindData() {
     fetch('https://api.open-meteo.com/v1/forecast?latitude=48.7326&longitude=-3.4566&hourly=wind_speed_10m&forecast_days=1')
         .then(response => response.json())
         .then(data => {
-            let windSpeed = data['hourly']['wind_speed_10m'][new Date().getHours()];
-            setWindValue(windSpeed);
+            windSpeed = data['hourly']['wind_speed_10m'][new Date().getHours()];
+            setWindSpeed(windSpeed);
         })
         .catch(error => {
             console.error("Error fetching wind data:", error);
@@ -143,31 +133,74 @@ function handleScroll() {
     lastScrollTop = st <= 0 ? 0 : st;
 }
 
+class LightSource {
+    constructor(x, y, brightness) {
+        this.x = x;
+        this.y = y;
+        this.brightness = brightness;
+    }
+
+    render() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - this.brightness, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    move() {
+        // Code to move the light source
+        // This will depend on how you want the light source to move
+    }
+}
+
 class Raindrop {
-    constructor(y, a, b, w, angle) {
+    constructor(y, a, b, w) {
         this.y = y;
         this.a = a;
         this.b = b;
         this.w = w;
-        this.angle = angle;
+        this.speed = (Math.random() * falling_speed - 2) + 8;
     }
 
     move() {
-        this.b += falling_speed * Math.sin(this.angle);
-        this.a += falling_speed * Math.cos(this.angle);
+        this.b += this.speed * Math.sin(angle);
+        this.a += this.speed * Math.cos(angle);
     }
 
     render() {
-        ctx.lineWidth = this.w;
-        ctx.strokeStyle = CONSTANTS.RAINDROP_COLOR;
-        ctx.beginPath();
-        ctx.moveTo(this.a, this.b);
-        ctx.lineTo(
-            this.a + Math.cos(this.angle) * this.y,
-            this.b + Math.sin(this.angle) * this.y
-        );
-        ctx.closePath();
-        ctx.stroke();
+        let dx = this.a - lightSource.x;
+        let dy = this.b - lightSource.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= lightSource.brightness && angle > -Math.PI / 2 && angle < Math.PI / 2) {
+            let alpha = 1 - distance / lightSource.brightness;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = this.w;
+            ctx.beginPath();
+            ctx.moveTo(this.a, this.b);
+            ctx.lineTo(
+                this.a + Math.cos(angle) * this.y,
+                this.b + Math.sin(angle) * this.y
+            );
+            ctx.closePath();
+            ctx.stroke();
+        }
+    }
+
+    update() {
+        this.move();
+
+        if (this.isOnCanvas() && !this.isOverlappingImage(images)) {
+            if (this.isInMouseRadius()) {
+                raindrops.splice(raindrops.indexOf(this), 1);
+            } else {
+                this.render();
+            }
+        } else {
+            handleSplashCollision(this);
+            raindrops.splice(raindrops.indexOf(this), 1);
+        }
     }
 
     isOnCanvas() {
@@ -184,55 +217,68 @@ class Raindrop {
     }
 
     clearRaindrop() {
-        clearCanvas(this.a - (this.w * 2), this.b - (this.w * 2), Math.cos(this.angle) * this.y + (this.w * 4), Math.sin(this.angle) * this.y + (this.w * 4));
+        clearCanvas(this.a - (this.w * 2), this.b - (this.w * 2), Math.cos(angle) * this.y + (this.w * 4), Math.sin(angle) * this.y + (this.w * 4));
     }
 
     isOverlappingImage(images) {
         const raindropRect = {
             left: this.a - (this.w * 2),
-            right: this.a + Math.cos(this.angle) * this.y + (this.w * 2),
+            right: this.a + Math.cos(angle) * this.y + (this.w * 2),
             top: this.b - (this.w * 2),
-            bottom: this.b + Math.sin(this.angle) * this.y + (this.w * 2)
+            bottom: this.b + Math.sin(angle) * this.y + (this.w * 2)
         };
 
         return Array.from(images).some(image => {
             let rect = image.getBoundingClientRect();
             return (
-                raindropRect.a <= rect.right + 10 &&
-                raindropRect.a >= rect.left - 10 &&
-                raindropRect.b <= rect.bottom &&
-                raindropRect.b >= rect.top - 10
+                raindropRect.left <= rect.right + 10 &&
+                raindropRect.right >= rect.left - 10 &&
+                raindropRect.top <= rect.bottom &&
+                raindropRect.bottom >= rect.top - 10
             );
         });
     }
 }
 
 class Splash {
-    constructor(x, y, size, speed, angle) {
+    constructor(x, y, size, speed) {
         this.x = x;
         this.y = y;
         this.size = size;
         this.speed = speed;
-        this.angle = angle;
+        this.startTime = performance.now();
     }
 
     move() {
-        this.y += this.speed * Math.sin(this.angle);
-        this.x += this.speed * Math.cos(this.angle);
+        this.y += this.speed * Math.sin(angleSplash);
+        this.x += this.speed * Math.cos(angleSplash);
     }
 
-    clearSplash() {
-        clearCanvas(this.x - 5, this.y - 5, this.size + 10, this.size + 10);
+    update() {
+        const currentTime = performance.now();
+        this.move();
+        this.render();
+        
+        if (this.y > ctx.canvas.height || this.x > ctx.canvas.width || (currentTime - this.startTime) > CONSTANTS.SPLASH_DURATION) {
+            splashes.splice(splashes.indexOf(this), 1);
+        }
     }
 
     render() {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(this.x, this.y, this.size, this.size);
-        ctx.fillStyle = CONSTANTS.RAINDROP_COLOR;
-        ctx.fill();
-        ctx.closePath();
-        ctx.restore();
+        // Calculate distance to light source
+        let dx = this.x - lightSource.x;
+        let dy = this.y - lightSource.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        // If distance is within range
+        if (distance <= lightSource.brightness) {
+            let alpha = 1 - (distance / lightSource.brightness) * (this.y / ctx.canvas.height);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.beginPath();
+            ctx.rect(this.x, this.y, this.size, this.size);
+            ctx.fill();
+            ctx.closePath();
+        }
     }
 }
 
