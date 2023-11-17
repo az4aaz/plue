@@ -1,2 +1,3 @@
 # plue
-website for the grossomodo webring
+
+simple rain generator
