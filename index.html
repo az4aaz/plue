@@ -6,12 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="header.css" />
   <link rel="stylesheet" href="main.css" />
-  <title>lower</title>
+  <title>plue</title>
 </head>
 
 <body>
   <!-- background animation -->
-  <img src="assets/img/pixil-frame-0.png" alt="lamp" id="street-lamp">
+  <!-- <img src="assets/img/pixil-frame-0.png" alt="lamp" id="street-lamp"> -->
   <canvas id="rain"></canvas>
 
   <header>
@@ -39,7 +39,14 @@
   <!-- just here for testing the scroll animation -->
   <div style="height: 500vh"></div>
 
-  <script src="rain.js"></script>
+  <script type="module" src="rain/constants.js"></script>
+  <script type="module" src="rain/canvas.js"></script>
+  <script type="module" src="rain/lightSource.js"></script>
+  <script type="module" src="rain/raindrop.js"></script>
+  <script type="module" src="rain/splash.js"></script>
+  <script type="module" src="rain/event.js"></script>
+  <script type="module" src="rain/api.js"></script>
+  <script type="module" src="rain/main.js"></script>
 </body>
 
 </html>
