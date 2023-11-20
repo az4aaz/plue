@@ -25,6 +25,8 @@ export class Splash {
     this.ctx = this.canvas.ctx;
     this.x = dropX;
     this.y = dropY;
+    this.size = Math.random() * CONSTANTS.MAX_SPLASH_SIZE;
+    this.speed = Math.random() * 2;
     this.startTime = performance.now();
     this.currentTime = this.startTime;
   }
@@ -40,21 +42,11 @@ export class Splash {
     this.render();
   }
 
-  render(ctx, lightSource) {
-    // Calculate distance to light source
-    let dx = this.x - lightSource.x;
-    let dy = this.y - lightSource.y;
-    let distance = Math.sqrt(dx * dx + dy * dy);
-
-    // If distance is within range
-    if (distance <= lightSource.brightness) {
-      let alpha =
-        1 - (distance / lightSource.brightness) * (this.y / ctx.canvas.height);
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      ctx.beginPath();
-      ctx.rect(this.x, this.y, this.size, this.size);
-      ctx.fill();
-      ctx.closePath();
-    }
+  render() {
+    this.ctx.fillStyle = this.CONSTANTS.RAINDROP_COLOR;
+    this.ctx.beginPath();
+    this.ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
+    this.ctx.closePath();
+    this.ctx.fill();
   }
 }

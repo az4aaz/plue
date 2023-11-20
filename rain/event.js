@@ -71,5 +71,6 @@ export class Event {
       "DOMContentLoaded",
       this.handleDOMContentLoad.bind(this),
     );
+    window.addEventListener("resize", this.canvas.resize);
   }
 }

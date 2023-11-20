@@ -28,7 +28,8 @@ export class RainController {
    * Generates a raindrop and pushes it to the raindrops array.
    */
   generateRaindrop() {
-    this.raindrops.push(new Raindrop(this.CONSTANTS, this.canvas, this.mouse));
+    const newDrop = new Raindrop(this.CONSTANTS, this.canvas, this.mouse);
+    this.raindrops.push(newDrop);
   }
 
   /**
@@ -46,7 +47,9 @@ export class RainController {
       const splashSize = Math.random() * size;
       const splashSpeed = Math.random() * 2;
 
-      this.splashes.push(new Splash(dropX, dropY, splashSize, splashSpeed));
+      this.splashes.push(
+        new Splash(this.CONSTANTS, this.canvas, this.mouse, dropX, dropY),
+      );
     }
   }
 
@@ -56,8 +59,9 @@ export class RainController {
    * @param { Raindrop } drop
    */
   handleSplashCollision(drop) {
+    //console.log("Splash!");
     const splashSize = drop.w;
-    this.generateSplash(drop.a, drop.b, splashSize);
+    this.generateSplashes(drop.x, drop.y, splashSize);
   }
 
   /**
@@ -66,21 +70,16 @@ export class RainController {
   moveRaindrops() {
     for (const drop of this.raindrops) {
       drop.move();
-      if (drop.isOnCanvas() && !drop.isOverlappingImage(images)) {
-        if (drop.isInMouseRadius()) {
-          this.delRaindrop(drop);
-        } else {
-          this.render();
-        }
-      } else {
-        this.delRaindrop(drop);
-      }
-
       if (drop.isOnTheGround()) {
         const collisionEvent = new CustomEvent("raindropCollision", {
           detail: drop,
         });
         window.dispatchEvent(collisionEvent);
+      }
+      if (drop.isOnCanvas()) {
+        drop.render();
+      } else {
+        this.delRaindrop(drop);
       }
     }
   }
@@ -94,7 +93,7 @@ export class RainController {
       if (
         splash.y > this.ctx.height ||
         splash.x > this.ctx.width ||
-        splash.currentTime - splash.startTime > CONSTANTS.SPLASH_DURATION
+        splash.currentTime - splash.startTime > this.CONSTANTS.SPLASH_DURATION
       ) {
         this.delSplash(splash);
       }
