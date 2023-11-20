@@ -13,6 +13,7 @@ export class Raindrop {
    * @property { number } width
    * @property { number } speed
    * @property { number } angle
+   *
    */
   constructor(CONSTANTS, canvas, mouse) {
     this.CONSTANTS = CONSTANTS;
@@ -20,27 +21,23 @@ export class Raindrop {
     this.mouse = mouse;
     this.ctx = this.canvas.ctx;
     this.lineLength = Math.random() * CONSTANTS.MAX_LINE_LENGTH;
-    this.x = Math.random() * this.canvas.canvasElement.width;
+    this.x =
+      this.canvas.canvasElement.width -
+      Math.random() * 2 * this.canvas.canvasElement.width;
     this.y = -this.lineLength;
     this.width = Math.random() * 2;
-    this.speed = Math.random() * 2 + 1;
-    this.angle = (Math.random() * Math.PI) / 180;
-  }
-
-  /**
-   * Updates the raindrop.
-   */
-  update() {
-    this.move();
-    this.render();
+    this.speed =
+      Math.random() * (this.CONSTANTS.MAX_SPEED - this.CONSTANTS.MIN_SPEED) +
+      this.CONSTANTS.MIN_SPEED;
+    this.angle = 10 * (Math.PI / 180);
   }
 
   /**
    * Moves the raindrop.
    */
   move() {
-    this.bPosition += this.speed * Math.sin(this.angle);
-    this.aPosition += this.speed * Math.cos(this.angle);
+    this.x += this.speed * Math.sin(this.angle);
+    this.y += this.speed * Math.cos(this.angle);
   }
 
   /**
@@ -50,10 +47,10 @@ export class Raindrop {
     this.ctx.strokeStyle = this.CONSTANTS.RAINDROP_COLOR;
     this.ctx.lineWidth = this.width;
     this.ctx.beginPath();
-    this.ctx.moveTo(this.aPosition, this.bPosition);
+    this.ctx.moveTo(this.x, this.y);
     this.ctx.lineTo(
-      this.aPosition + Math.cos(this.angle) * this.y,
-      this.bPosition + Math.sin(this.angle) * this.y,
+      this.x + Math.cos(this.angle),
+      this.y + Math.sin(this.angle) * this.lineLength,
     );
     this.ctx.closePath();
     this.ctx.stroke();
@@ -65,9 +62,7 @@ export class Raindrop {
    * @returns { boolean }
    */
   isOnTheGround() {
-    return (
-      this.bPosition >= this.ctx.canvas.height - this.CONSTANTS.GROUND_LEVEL
-    );
+    return this.y >= this.ctx.canvas.height - this.CONSTANTS.GROUND_LEVEL;
   }
 
   /**
@@ -77,8 +72,8 @@ export class Raindrop {
    */
   isOnCanvas() {
     return (
-      this.a <= this.ctx.canvas.width &&
-      this.b <= this.ctx.canvas.height - this.CONSTANTS.GROUND_LEVEL
+      this.x <= this.canvas.canvasElement.width &&
+      this.y <= this.canvas.canvasElement.height - this.CONSTANTS.GROUND_LEVEL
     );
   }
 
@@ -89,10 +84,10 @@ export class Raindrop {
    */
   isInMouseRadius() {
     return (
-      this.a <= mouse.x + CONSTANTS.MOUSE_RADIUS &&
-      this.a >= mouse.x - CONSTANTS.MOUSE_RADIUS &&
-      this.b <= mouse.y + CONSTANTS.MOUSE_RADIUS &&
-      this.b >= mouse.y - CONSTANTS.MOUSE_RADIUS
+      this.x <= this.mouse.x + this.CONSTANTS.MOUSE_RADIUS &&
+      this.x >= this.mouse.x - this.CONSTANTS.MOUSE_RADIUS &&
+      this.y <= this.mouse.y + this.CONSTANTS.MOUSE_RADIUS &&
+      this.y >= this.mouse.y - this.CONSTANTS.MOUSE_RADIUS
     );
   }
 
