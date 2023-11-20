@@ -11,14 +11,14 @@ const canvas = new Canvas(CONSTANTS.CANVAS_ID);
 // Initialize mouse position
 const mouse = { x: 0, y: 0 };
 
-// Initialize rain controller
-const rainController = new RainController(CONSTANTS, canvas, mouse);
-
 // Initialize event handlers
 const event = new Event(CONSTANTS, window, canvas, mouse);
 let frameCount = 0;
 let updateEveryFrames = 1;
 event.addEventListeners();
+
+// Initialize rain controller
+const rainController = new RainController(CONSTANTS, canvas, mouse, event);
 
 let animationFrameId = null;
 

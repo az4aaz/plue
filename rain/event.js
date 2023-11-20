@@ -17,6 +17,7 @@ export class Event {
     this.window = window;
     this.canvas = canvas;
     this.mouse = mouse;
+    this.varscrollSteps = this.handleScroll();
   }
 
   /**
@@ -46,9 +47,18 @@ export class Event {
     );
     const winHeight = window.innerHeight;
     const scrollPercent = scrollTop / (docHeight - winHeight);
-    const varscrollSteps = Math.round(
+    this.varscrollSteps = Math.round(
       scrollPercent * this.CONSTANTS.RAIN_STEPS,
     );
+  }
+
+  /**
+   * Returns the scroll percentage of the page.
+   * 
+   * @returns number
+   */
+  getScroll() {
+    return this.varscrollSteps;
   }
 
   /**
@@ -58,6 +68,10 @@ export class Event {
    */
   handleDOMContentLoad() {
     fetchWindData();
+    this.canvas.resize();
+  }
+
+  handleResize() {
     this.canvas.resize();
   }
 
@@ -71,6 +85,6 @@ export class Event {
       "DOMContentLoaded",
       this.handleDOMContentLoad.bind(this),
     );
-    window.addEventListener("resize", this.canvas.resize);
+    window.addEventListener("resize", this.handleResize.bind(this));
   }
 }

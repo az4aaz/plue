@@ -25,9 +25,10 @@ export class Splash {
     this.ctx = this.canvas.ctx;
     this.x = dropX;
     this.y = dropY;
-    this.size = Math.random() * CONSTANTS.MAX_SPLASH_SIZE;
+    this.size = Math.random() * 2;
     this.speed = Math.random() * 2;
     this.startTime = performance.now();
+    this.angle = Math.random() + Math.PI;
     this.currentTime = this.startTime;
   }
 

@@ -1,5 +1,6 @@
 import { Raindrop } from "./raindrop.js";
 import { Splash } from "./splash.js";
+import { Event } from "./event.js"; 
 
 console.log("rain/controller.js has been loaded.");
 
@@ -10,11 +11,13 @@ export class RainController {
    * @param { Object.<string, number> } CONSTANTS
    * @param { Canvas } canvas
    * @param { { x: number, y: number } } mouse
+   * @param { Event } event
    */
-  constructor(CONSTANTS, canvas, mouse) {
+  constructor(CONSTANTS, canvas, mouse, event) {
     this.CONSTANTS = CONSTANTS;
     this.canvas = canvas;
     this.mouse = mouse;
+    this.event = event;
     this.ctx = this.canvas.ctx;
     this.raindrops = [];
     this.splashes = [];
@@ -28,8 +31,16 @@ export class RainController {
    * Generates a raindrop and pushes it to the raindrops array.
    */
   generateRaindrop() {
-    const newDrop = new Raindrop(this.CONSTANTS, this.canvas, this.mouse);
-    this.raindrops.push(newDrop);
+    let scrollValue = this.event.getScroll() + 1;
+    if (isNaN(scrollValue)) {
+      scrollValue = 1
+    }
+    console.log(scrollValue)
+    window.scrollValue = this.event;
+    for (let numDrops = 0; numDrops < scrollValue; numDrops++) {
+      const newDrop = new Raindrop(this.CONSTANTS, this.canvas, this.mouse);
+      this.raindrops.push(newDrop);
+    }
   }
 
   /**
@@ -39,14 +50,10 @@ export class RainController {
    * @param { number } dropY
    * @param { number } size
    */
-  generateSplashes(dropX, dropY, size) {
+  generateSplashes(dropX, dropY) {
     const numSplashes =
       Math.floor(Math.random() * this.CONSTANTS.MAX_SPLASHES) + 1;
-
     for (let i = 0; i < numSplashes; i++) {
-      const splashSize = Math.random() * size;
-      const splashSpeed = Math.random() * 2;
-
       this.splashes.push(
         new Splash(this.CONSTANTS, this.canvas, this.mouse, dropX, dropY),
       );
@@ -59,9 +66,7 @@ export class RainController {
    * @param { Raindrop } drop
    */
   handleSplashCollision(drop) {
-    //console.log("Splash!");
-    const splashSize = drop.w;
-    this.generateSplashes(drop.x, drop.y, splashSize);
+    this.generateSplashes(drop.x, drop.y);
   }
 
   /**
