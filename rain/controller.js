@@ -1,6 +1,5 @@
 import { Raindrop } from "./raindrop.js";
 import { Splash } from "./splash.js";
-import { Event } from "./event.js"; 
 
 console.log("rain/controller.js has been loaded.");
 
