@@ -1,4 +1,5 @@
 import { Raindrop } from "./raindrop.js";
+import { RectElement } from "./rectelement.js";
 import { Splash } from "./splash.js";
 import { Utils } from "../constants.js";
 
@@ -67,15 +68,7 @@ export class RainController {
         const collisionEvent = new CustomEvent("raindropCollision", {
           detail: drop,
         });
-        window.dispatchEvent(collisionEvent);
-      }
-      if (drop.isOnCanvas()) {
-        drop.render();
-      } else {
-        this.delRaindrop(drop);
-      }
     }
-  }
 
   /**
    * Moves the splashes.
@@ -91,34 +84,103 @@ export class RainController {
         this.delSplash(splash);
       }
     }
-  }
 
-  /**
-   * Deletes a raindrop from the raindrops array.
-   */
-  delRaindrop(drop) {
-    const dropIndex = this.raindrops.indexOf(drop);
-    if (dropIndex > -1) {
-      this.raindrops.splice(dropIndex, 1);
+    /**
+     * Generates splashes and pushes them to the splashes array.
+     *
+     * @param { number } dropX
+     * @param { number } dropY
+     * @param { number } size
+     */
+    generateSplashes(dropX, dropY) {
+        const numSplashes =
+            Math.floor(Math.random() * this.CONSTANTS.MAX_SPLASHES) + 1;
+        for (let i = 0; i < numSplashes; i++) {
+            this.splashes.push(
+                new Splash(
+                    this.CONSTANTS,
+                    this.canvas,
+                    this.mouse,
+                    dropX,
+                    dropY
+                )
+            );
+        }
     }
-  }
 
-  /**
-   * Delete a splash from the splashes array.
-   */
-  delSplash(splash) {
-    const splashIndex = this.splashes.indexOf(splash);
-    if (splashIndex > -1) {
-      this.splashes.splice(splashIndex, 1);
+    /**
+     * Handles the collision between a raindrop and the ground.
+     *
+     * @param { Raindrop } drop
+     */
+    handleSplashCollision(drop) {
+        this.generateSplashes(drop.x, drop.y);
     }
-  }
 
-  /**
-   * Updates and renders the raindrops and splashes.
-   */
-  updateAndRender() {
-    this.generateRaindrop();
-    this.moveRaindrops();
-    this.moveSplashes();
-  }
+    /**
+     * Moves the raindrops.
+     */
+    moveRaindrops() {
+        for (const drop of this.raindrops) {
+            drop.update();
+            if (!drop.isDead) {
+                drop.render();
+            }
+        }
+        this.deleteDeadRaindrops();
+    }
+
+    /**
+     * Deletes raindrops that are off the screen.
+     */
+    deleteDeadRaindrops() {
+        this.raindrops = this.raindrops.filter((drop) => !drop.isDead);
+    }
+
+    /**
+     * Moves the splashes.
+     */
+    moveSplashes() {
+        for (const splash of this.splashes) {
+            splash.update();
+            if (
+                splash.y > this.ctx.height ||
+                splash.x > this.ctx.width ||
+                splash.currentTime - splash.startTime >
+                    this.CONSTANTS.SPLASH_DURATION
+            ) {
+                this.delSplash(splash);
+            }
+            splash.render();
+        }
+    }
+
+    /**
+     * Deletes a raindrop from the raindrops array.
+     */
+    delRaindrop(drop) {
+        const dropIndex = this.raindrops.indexOf(drop);
+        if (dropIndex > -1) {
+            this.raindrops.splice(dropIndex, 1);
+        }
+    }
+
+    /**
+     * Delete a splash from the splashes array.
+     */
+    delSplash(splash) {
+        const splashIndex = this.splashes.indexOf(splash);
+        if (splashIndex > -1) {
+            this.splashes.splice(splashIndex, 1);
+        }
+    }
+
+    /**
+     * Updates and renders the raindrops and splashes.
+     */
+    updateAndRender() {
+        this.generateRaindrop();
+        this.moveRaindrops();
+        this.moveSplashes();
+    }
 }
