@@ -4,16 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="header.css" />
-  <link rel="stylesheet" href="main.css" />
+  <link rel="stylesheet" href="styles/header.css" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="icon" href="./favicon.ico" type="image/x-icon" />
+  <script src="lib/p5.min.js"></script>
   <title>plue</title>
 </head>
 
 <body>
-  <!-- background animation -->
-  <!-- <img src="assets/img/pixil-frame-0.png" alt="lamp" id="street-lamp"> -->
-  <canvas id="rain"></canvas>
-
   <header>
     <img src="assets/img/logo.png" alt="PLUE" id="logo" />
     <div id="title">
@@ -36,17 +34,19 @@
     </p>
     <img class="deco" src="assets/img/courbet.png" alt="is">
   </main>
-  <!-- just here for testing the scroll animation -->
-  <div style="height: 500vh"></div>
-
-  <script type="module" src="rain/constants.js"></script>
-  <script type="module" src="rain/canvas.js"></script>
-  <script type="module" src="rain/lightSource.js"></script>
-  <script type="module" src="rain/raindrop.js"></script>
-  <script type="module" src="rain/splash.js"></script>
-  <script type="module" src="rain/event.js"></script>
-  <script type="module" src="rain/api.js"></script>
-  <script type="module" src="rain/main.js"></script>
+  <aside>
+    <button id="play">⏵</button>
+    <button id="pause">⏸</button>
+    <button id="weather">☀</button>
+  </aside>  
+  <footer>
+    <p class="footer-text">made with ♥ by <a href="https://github.com/az4aaz">az4aaz</a></p>
+  </footer>
+  <script type="module" src="weather/constants.js"></script>
+  <script type="module" src="weather/canvas.js"></script>
+  <script type="module" src="weather/rain/raindrop.js"></script>
+  <script type="module" src="weather/api.js"></script>
+  <script type="module" src="weather/main.js"></script>
 </body>
 
 </html>

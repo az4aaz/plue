@@ -1,5 +1,3 @@
-console.log("rain/api.js has been loaded.");
-
 /**
  * Fetches the wind data from the API.
  *

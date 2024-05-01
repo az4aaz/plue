@@ -1,5 +1,3 @@
-console.log("rain/canvas.js has been loaded.");
-
 export class Canvas {
   /**
    * Responsible for handling the canvas.

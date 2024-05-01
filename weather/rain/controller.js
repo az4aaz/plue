@@ -1,21 +1,17 @@
 import { Raindrop } from "./raindrop.js";
 import { Splash } from "./splash.js";
-
-console.log("rain/controller.js has been loaded.");
+import { Utils } from "../constants.js";
 
 export class RainController {
   /**
    * Generating and moving raindrops and splashes.
    *
-   * @param { Object.<string, number> } CONSTANTS
-   * @param { Canvas } canvas
+   * @param { NeoPixelGrid } grid
    * @param { { x: number, y: number } } mouse
    */
-  constructor(CONSTANTS, canvas, mouse) {
-    this.CONSTANTS = CONSTANTS;
-    this.canvas = canvas;
+  constructor(grid, mouse) {
+    this.grid = grid;
     this.mouse = mouse;
-    this.ctx = this.canvas.ctx;
     this.raindrops = [];
     this.splashes = [];
 
@@ -28,7 +24,7 @@ export class RainController {
    * Generates a raindrop and pushes it to the raindrops array.
    */
   generateRaindrop() {
-    const newDrop = new Raindrop(this.CONSTANTS, this.canvas, this.mouse);
+    const newDrop = new Raindrop(this.grid, this.mouse);
     this.raindrops.push(newDrop);
   }
 
@@ -38,18 +34,16 @@ export class RainController {
    * @param { number } dropX
    * @param { number } dropY
    * @param { number } size
+   *
+   * @todo This method is not used. Remove it or use it in the future.
    */
   generateSplashes(dropX, dropY, size) {
     const numSplashes =
-      Math.floor(Math.random() * this.CONSTANTS.MAX_SPLASHES) + 1;
+      Math.floor(Math.random() * Utils.CONSTANTS.MAX_SPLASHES) +
+      Utils.CONSTANTS.MIN_SPLASHES;
 
     for (let i = 0; i < numSplashes; i++) {
-      const splashSize = Math.random() * size;
-      const splashSpeed = Math.random() * 2;
-
-      this.splashes.push(
-        new Splash(this.CONSTANTS, this.canvas, this.mouse, dropX, dropY),
-      );
+      this.splashes.push(new Splash(this.grid, this.mouse, dropX, dropY));
     }
   }
 
@@ -59,7 +53,6 @@ export class RainController {
    * @param { Raindrop } drop
    */
   handleSplashCollision(drop) {
-    //console.log("Splash!");
     const splashSize = drop.w;
     this.generateSplashes(drop.x, drop.y, splashSize);
   }
@@ -91,9 +84,9 @@ export class RainController {
     for (const splash of this.splashes) {
       splash.update();
       if (
-        splash.y > this.ctx.height ||
-        splash.x > this.ctx.width ||
-        splash.currentTime - splash.startTime > this.CONSTANTS.SPLASH_DURATION
+        splash.y > this.grid.height ||
+        splash.x > this.grid.width ||
+        splash.currentTime - splash.startTime > Utils.CONSTANTS.SPLASH_DURATION
       ) {
         this.delSplash(splash);
       }
