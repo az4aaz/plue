@@ -1,3 +1,7 @@
+body {
+    overflow: hidden;
+}
+
 main {
     position: relative;
     min-width: 30%;
