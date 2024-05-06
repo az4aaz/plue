@@ -44,8 +44,8 @@ export class RainController {
    */
   generateSplashes(dropX, dropY, size) {
     const numSplashes =
-      Math.floor(Math.random() * Utils.CONSTANTS.MAX_SPLASHES) +
-      Utils.CONSTANTS.MIN_SPLASHES;
+      Math.floor(Math.random() * Utils.CONSTANTS.SPLASH.MAX_SPLASHES) +
+      Utils.CONSTANTS.SPLASH.MIN_SPLASHES;
     for (let i = 0; i < numSplashes; i++) {
       this.splashes.push(new Splash(this.grid, this.mouse, dropX, dropY));
     }
@@ -90,7 +90,7 @@ export class RainController {
       if (
         splash.y > this.grid.height ||
         splash.x > this.grid.width ||
-        splash.currentTime - splash.startTime > Utils.CONSTANTS.SPLASH_DURATION
+        splash.currentTime - splash.startTime > Utils.CONSTANTS.SPLASH.DURATION
       ) {
         this.delSplash(splash);
       }

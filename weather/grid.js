@@ -12,22 +12,22 @@ export class NeoPixelGrid {
     this.height = Math.ceil(height / resolution);
     this.width = Math.ceil(width / resolution);
     // Initialize a 2D array with null values
-    this.pixels = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(null)
+    this.pixels = Array.from({ length: this.width }, () =>
+      Array(this.height).fill(null)
     );
   }
 
   setPixel(x, y, color) {
     // Check if the coordinates are within the grid
     if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-      this.pixels[y][x] = color;
+      this.pixels[x][y] = color;
     }
   }
 
   getPixel(x, y) {
     // Check if the coordinates are within the grid
     if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-      return this.pixels[y][x];
+      return this.pixels[x][y];
     }
     return null;
   }
@@ -36,7 +36,7 @@ export class NeoPixelGrid {
     // Clear the grid by setting all pixels to null
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        this.pixels[y][x] = null;
+        this.pixels[x][y] = null;
       }
     }
   }
@@ -46,6 +46,7 @@ export class NeoPixelGrid {
       for (let x = 0; x < this.width; x++) {
         let color = this.getPixel(x, y);
         if (color) {
+          this.p.noStroke();
           this.p.fill(color);
           this.p.rect(
             x * this.resolution,

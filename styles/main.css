@@ -1,7 +1,3 @@
-body {
-    overflow: hidden;
-}
-
 main {
     position: relative;
     min-width: 30%;
@@ -15,7 +11,8 @@ main {
     margin: 0 auto;
     width: 100%;
     max-width: 20em;
-    height: 100%;
+
+    user-select: none;
 }
 
 footer {
@@ -24,4 +21,26 @@ footer {
     width: 100%;
     height: 2.5em;
     text-align: center;
+}
+
+aside {
+    position: absolute;
+    display: flex;
+    top: 0;
+    right: 0;
+    width: 20em;
+    height: 100%;
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* We add a bit of style to the buttons to make them look more 8bit old school */
+aside.button {
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #fff;
+    cursor: pointer;
+    font-size: 1.5em;
+    padding: 0.5em;
 }

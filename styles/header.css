@@ -14,6 +14,10 @@ body {
     font-family: monospace;
 }
 
+body p {
+    user-select: none;
+}
+
 /* rain overlay */
 #rain {
     position: fixed;
@@ -34,6 +38,7 @@ header {
     margin-top: 0.5em;
     align-self: center;
     transition: all 450ms;
+    user-select: none;
 }
 
 /* logo hover effects */
@@ -48,6 +53,7 @@ header {
     opacity: 0;
     transform: translateY(-125%);
     transition: all 450ms;
+    user-select: none;
 }
 
 /* title and link styles */
