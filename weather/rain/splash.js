@@ -36,7 +36,7 @@ export class Splash {
 
   render() {
     if (this.y < this.grid.height - 1 && this.y > this.grid.height) {
-      this.grid.setPixel(this.x, this.y, Utils.CONSTANTS.RAINDROP_COLOR);
+      this.grid.setPixel(this.x, this.y, Utils.CONSTANTS.RAINDROP.COLOR);
     }
   }
 }
