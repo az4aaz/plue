@@ -6,7 +6,7 @@ export class Utils {
     CANVAS: {
       ID: "rain",
       BACKGROUND_COLOR: "#131313",
-      RESOLUTION: 8,
+      RESOLUTION: 2,
     },
     RAINDROP: {
       COLOR: "rgba(255, 255, 255, 1)",
@@ -37,6 +37,7 @@ export class Utils {
         x: 0,
         y: 0.3,
       },
+      CONSTRAINT_ITERATIONS: 40,
     },
   };
 
@@ -211,5 +212,26 @@ export class Utils {
       pixels.push(row);
     }
     return pixels;
+  }
+
+  static normalizeVector(vector) {
+    let length = Math.sqrt(vector.x ** 2 + vector.y ** 2);
+    return { x: vector.x / length, y: vector.y / length };
+  }
+
+  static dotProduct(vector1, vector2) {
+    return vector1.x * vector2.x + vector1.y * vector2.y;
+  }
+
+  static multiplyVector(vector, scalar) {
+    return { x: vector.x * scalar, y: vector.y * scalar };
+  }
+
+  static subtractVector(vector1, vector2) {
+    return { x: vector1.x - vector2.x, y: vector1.y - vector2.y };
+  }
+
+  static addVector(vector1, vector2) {
+    return { x: vector1.x + vector2.x, y: vector1.y + vector2.y };
   }
 }

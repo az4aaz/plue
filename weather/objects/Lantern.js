@@ -39,7 +39,7 @@ export class Lantern extends PhysicsObject {
     ) {
       let x = Math.floor(this.position.x + this.radius * Math.cos(i));
       let y = Math.floor(this.position.y + this.radius * Math.sin(i));
-      y += this.radius + this.chainLinkLength;
+      y += this.radius;
       this.grid.setPixel(x, y, this.color);
     }
   }
