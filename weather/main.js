@@ -6,8 +6,8 @@ import { Image } from "./image.js";
 
 // Initialize mouse position
 const mouse = {
-  x: 100,
-  y: 100,
+  x: 0,
+  y: 0,
 };
 
 // Initialize grid
@@ -36,7 +36,7 @@ let img;
 // Initialize p5 instance
 const pInstance = new p5((p) => {
   p.setup = () => {
-    let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+    let cnv = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
     cnv.id(Utils.CONSTANTS.CANVAS.ID);
     p.background(Utils.CONSTANTS.CANVAS.BACKGROUND_COLOR);
     grid = new NeoPixelGrid(
@@ -51,26 +51,20 @@ const pInstance = new p5((p) => {
   };
 
   p.draw = () => {
-    if (!playing) {
-      p.clear();
-      p.background(Utils.CONSTANTS.CANVAS.BACKGROUND_COLOR);
-      grid.clear();
-      // rainController.render();
-      light.move();
-      light.render();
-      img.render();
-      grid.render();
-    } else {
-      p.clear();
-      p.background(Utils.CONSTANTS.CANVAS.BACKGROUND_COLOR);
-      grid.clear();
-      light.move();
-      light.render();
-      img.render();
+    p.translate(-p.width / 2, -p.height / 2);
+    p.clear();
+    p.background(Utils.CONSTANTS.CANVAS.BACKGROUND_COLOR);
+    grid.clear();
+    img.render();
 
-      //rainController.updateAndRender(p);
-      grid.render();
+    if (!playing) {
+      rainController.render();
+    } else {
+      rainController.updateAndRender(p);
     }
+    light.move();
+    light.render();
+    grid.render();
   };
 
   p.windowResized = () => {

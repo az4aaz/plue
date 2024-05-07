@@ -1,6 +1,7 @@
 import { Utils } from "./constants.js";
 import { Lantern } from "./objects/Lantern.js";
 import { ChainLink } from "./objects/ChainLink.js";
+import { Constraint } from "./physics/object.js";
 
 export class LightSource {
   /**
@@ -107,8 +108,10 @@ export class SuspendedLantern extends LightSource {
       let x = Math.floor(this.x);
       let y = Math.floor(this.y + i * this.chainLinkProperties.length);
       if (i > 0) {
-        x = this.chainLinks[i - 1].position.x;
-        y = this.chainLinks[i - 1].position.y + this.chainLinkProperties.length;
+        x = Math.floor(this.chainLinks[i - 1].position.x);
+        y = Math.floor(
+          this.chainLinks[i - 1].position.y + this.chainLinkProperties.length
+        );
       }
       let newLink = new ChainLink(
         this.grid,
@@ -119,6 +122,15 @@ export class SuspendedLantern extends LightSource {
         "rgba(255, 255, 255, 1)"
       );
       this.chainLinks.push(newLink);
+      // Add constraints
+      if (i > 0) {
+        let constraint = new Constraint(
+          this.chainLinks[i - 1],
+          this.chainLinks[i],
+          this.chainLinkProperties.length
+        );
+        this.chainLinks[i - 1].addConstraint(constraint);
+      }
     }
   }
 
@@ -164,22 +176,15 @@ export class SuspendedLantern extends LightSource {
   }
 
   move() {
-    const k = 0.3; // Spring constant
+    let k = 0.05; // Spring constant
 
     // Update the first chain link based on the mouse position
     this.updateFirstChainLink();
 
-    for (let i = 1; i < this.chainLinks.length; i++) {
-      let link = this.chainLinks[i];
-      let prevLink = this.chainLinks[i - 1];
-
-      link.applySpringForce(
-        k,
-        this.chainLinkProperties.length,
-        prevLink.position.x - link.position.x,
-        prevLink.position.y - link.position.y
-      );
-      link.update();
+    // Update the position of the chain links
+    for (const chainLink of this.chainLinks) {
+      chainLink.update();
+      chainLink.applyForce(Utils.CONSTANTS.PHYSICS.GRAVITY);
     }
 
     // Apply the forces and update the lantern
@@ -193,8 +198,6 @@ export class SuspendedLantern extends LightSource {
         this.chainLinks[this.chainLinks.length - 1].position.y
     );
     this.lantern.update();
-
-    // Update the lantern's position based on the last chain link's position
     this.updateLantern();
   }
 
