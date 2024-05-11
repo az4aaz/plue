@@ -1,4 +1,5 @@
 import { PhysicsObject } from "../physics/object.js";
+import { Fire } from "./Fire.js";
 
 export class Lantern extends PhysicsObject {
   /**
@@ -26,6 +27,16 @@ export class Lantern extends PhysicsObject {
     this.radius = radius;
     this.color = color;
     this.chainLinkLength = chainLinkLength;
+    this.fire = new Fire(x, y, this.radius / 2, this.grid);
+  }
+
+  /**
+   * Updates the lantern.
+   * @override
+   */
+  update() {
+    super.update();
+    this.fire.update();
   }
 
   /**
@@ -37,10 +48,19 @@ export class Lantern extends PhysicsObject {
       i < 2 * Math.PI;
       i += Math.PI / (this.grid.resolution * 10)
     ) {
-      let x = Math.floor(this.position.x + this.radius * Math.cos(i));
-      let y = Math.floor(this.position.y + this.radius * Math.sin(i));
+      let x = Math.floor(
+        (this.position.x + this.radius * this.grid.resolution * Math.cos(i)) /
+          this.grid.resolution
+      );
+      let y = Math.floor(
+        (this.position.y + this.radius * this.grid.resolution * Math.sin(i)) /
+          this.grid.resolution
+      );
       y += this.radius;
       this.grid.setPixel(x, y, this.color);
+      this.fire.x = this.position.x;
+      this.fire.y = this.position.y + this.radius * this.grid.resolution;
+      this.fire.render();
     }
   }
 }

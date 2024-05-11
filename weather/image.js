@@ -19,7 +19,6 @@ export class Image {
 
     // Convert the image to pixels
     this.imagePixel = Utils.imageToGrid(this.image, this.grid.resolution);
-    console.log(this.imagePixel);
   }
 
   /**

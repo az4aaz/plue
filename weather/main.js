@@ -5,7 +5,7 @@ import { NeoPixelGrid } from "./grid.js";
 import { Image } from "./image.js";
 
 // Initialize mouse position
-const mouse = {
+let mouse = {
   x: 0,
   y: 0,
 };
@@ -38,6 +38,10 @@ const pInstance = new p5((p) => {
   p.setup = () => {
     let cnv = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
     cnv.id(Utils.CONSTANTS.CANVAS.ID);
+    mouse = {
+      x: p.width / 2,
+      y: p.height / 2 - 100,
+    };
     p.background(Utils.CONSTANTS.CANVAS.BACKGROUND_COLOR);
     grid = new NeoPixelGrid(
       p,
