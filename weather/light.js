@@ -122,11 +122,15 @@ export class SuspendedLantern extends LightSource {
           this.chainLinks[i - 1].position.y + this.chainLinkProperties.length
         );
       }
+      let newMass =
+        i == 0
+          ? this.chainLinkProperties.mass * this.chainLinkProperties.number
+          : this.chainLinkProperties.mass;
       let newLink = new ChainLink(
         this.grid,
         x,
         y,
-        this.chainLinkProperties.mass,
+        newMass,
         this.chainLinkProperties.length,
         "rgba(255, 255, 255, 1)"
       );
