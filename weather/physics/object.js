@@ -18,6 +18,15 @@ export class PhysicsObject {
     this.constraints.push(constraint);
   }
 
+  checkCollisionWithGround() {
+    let pixelGroundLevel =
+      (this.grid.height - Utils.CONSTANTS.GROUND.LEVEL) * this.grid.resolution;
+    if (this.position.y > pixelGroundLevel) {
+      this.position.y = pixelGroundLevel;
+      this.velocity.y = -this.velocity.y * this.friction;
+    }
+  }
+
   applyForce(force) {
     this.acceleration.x += force.x / this.mass;
     this.acceleration.y += force.y / this.mass;
@@ -55,6 +64,8 @@ export class PhysicsObject {
       y: this.position.y + this.velocity.y,
     };
 
+    this.checkCollisionWithGround();
+
     this.acceleration = { x: 0, y: 0 };
 
     for (let i = 0; i < Utils.CONSTANTS.PHYSICS.CONSTRAINT_ITERATIONS; i++) {
@@ -71,7 +82,7 @@ export class Constraint {
     this.link2 = link2;
     this.length = length;
     this.stiffness = stiffness;
-    this.breakThreshold = 200;
+    this.breakThreshold = 2000;
     this.broken = false;
   }
 

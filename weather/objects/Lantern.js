@@ -1,5 +1,6 @@
 import { PhysicsObject } from "../physics/object.js";
 import { Fire } from "./Fire.js";
+import { Utils } from "../constants.js";
 
 export class Lantern extends PhysicsObject {
   /**
@@ -27,7 +28,7 @@ export class Lantern extends PhysicsObject {
     this.radius = radius;
     this.color = color;
     this.chainLinkLength = chainLinkLength;
-    this.fire = new Fire(x, y, this.radius / 2, this.grid);
+    this.fire = new Fire(x, y, this.radius / 3, this.grid);
   }
 
   /**
@@ -37,6 +38,17 @@ export class Lantern extends PhysicsObject {
   update() {
     super.update();
     this.fire.update();
+  }
+
+  checkCollisionWithGround() {
+    let pixelGroundLevel =
+      (this.grid.height - Utils.CONSTANTS.GROUND.LEVEL - 2 * this.radius) *
+      this.grid.resolution;
+    if (this.position.y + this.radius >= pixelGroundLevel) {
+      this.position.y = pixelGroundLevel;
+      this.velocity.y = -this.velocity.y * 0.5;
+      this.velocity.x *= 0.8;
+    }
   }
 
   /**
