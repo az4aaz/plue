@@ -6,7 +6,7 @@ export class Utils {
     CANVAS: {
       ID: "rain",
       BACKGROUND_COLOR: "#131313",
-      RESOLUTION: 2,
+      RESOLUTION: 5,
     },
     RAINDROP: {
       COLOR: "rgba(255, 255, 255, 1)",
@@ -37,7 +37,11 @@ export class Utils {
         x: 0,
         y: 0.3,
       },
-      CONSTRAINT_ITERATIONS: 40,
+      GRAVITY_DIVISOR: 1,
+      MAX_DIFFERENCE: 10,
+      MAX_ADJUSTMENT: 10,
+      MAX_VELOCITY_CORRECTION: 10,
+      CONSTRAINT_ITERATIONS: 3,
     },
   };
 
@@ -132,7 +136,7 @@ export class Utils {
    * @static
    */
   static weight(mass) {
-    return mass * this.CONSTANTS.PHYSICS.GRAVITY.x;
+    return mass * this.CONSTANTS.PHYSICS.GRAVITY.y;
   }
 
   /**

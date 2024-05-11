@@ -1,4 +1,4 @@
-import { PhysicsObject, Constraint } from "../physics/object.js";
+import { PhysicsObject } from "../physics/object.js";
 import { Utils } from "../constants.js";
 
 export class ChainLink extends PhysicsObject {
@@ -26,24 +26,6 @@ export class ChainLink extends PhysicsObject {
     this.radius = radius;
     this.color = color;
     this.chainLinkLength = chainLinkLength;
-    this.constraints = [];
-  }
-
-  /**
-   * Adds a constraint to the chain link.
-   * @param { Constraint } constraint The constraint to add.
-   */
-  addConstraint(constraint) {
-    this.constraints.push(constraint);
-  }
-
-  update() {
-    super.update();
-    for (let constraint of this.constraints) {
-      constraint.update();
-    }
-    this.acceleration = { x: 0, y: 0 };
-    this.velocity = { x: 0, y: 0 };
   }
 
   /**

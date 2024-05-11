@@ -65,15 +65,17 @@ export class SuspendedLantern extends LightSource {
     super(grid, mouse, radius, color);
 
     this.chainLinkProperties = {
-      mass: 10,
-      number: 12,
-      length: 3,
+      mass: 3,
+      number: 20,
+      length: 2,
     };
 
     this.lanternProperties = {
-      mass: 5,
+      mass: 20,
       radius: 5,
     };
+
+    this.connectedToMouse = true;
 
     this.generateChainLinks();
     this.generateLantern();
@@ -96,6 +98,13 @@ export class SuspendedLantern extends LightSource {
       this.chainLinkProperties.length,
       "rgba(255, 255, 255, 0.5)",
       this.lanternProperties.radius
+    );
+    this.lantern.addConstraint(
+      new Constraint(
+        this.chainLinks[this.chainLinks.length - 1],
+        this.lantern,
+        this.chainLinkProperties.length
+      )
     );
   }
 
@@ -124,10 +133,12 @@ export class SuspendedLantern extends LightSource {
       this.chainLinks.push(newLink);
       // Add constraints
       if (i > 0) {
-        let constraint = new Constraint(
+        const stiffness = i == 1 ? 1 : 0.9;
+        const constraint = new Constraint(
           this.chainLinks[i - 1],
           this.chainLinks[i],
-          this.chainLinkProperties.length
+          this.chainLinkProperties.length,
+          stiffness
         );
         this.chainLinks[i - 1].addConstraint(constraint);
       }
@@ -162,43 +173,16 @@ export class SuspendedLantern extends LightSource {
     );
   }
 
-  /**
-   * Updates the position of the lantern.
-   * The lantern is always at the end of the chain.
-   */
-  updateLantern() {
-    let x = this.chainLinks[this.chainLinks.length - 1].position.x;
-    let y = this.chainLinks[this.chainLinks.length - 1].position.y;
-    this.lantern.position.x = Math.floor(x / this.grid.resolution);
-    this.lantern.position.y = Math.floor(
-      (y + this.lanternProperties.radius) / this.grid.resolution
-    );
-  }
-
   move() {
-    let k = 0.05; // Spring constant
-
-    // Update the first chain link based on the mouse position
-    this.updateFirstChainLink();
-
     // Update the position of the chain links
     for (const chainLink of this.chainLinks) {
       chainLink.update();
-      chainLink.applyForce(Utils.CONSTANTS.PHYSICS.GRAVITY);
     }
-
-    // Apply the forces and update the lantern
-    this.lantern.applyForce(Utils.CONSTANTS.PHYSICS.GRAVITY);
-    this.lantern.applySpringForce(
-      k,
-      this.chainLinkProperties.length,
-      this.lantern.position.x -
-        this.chainLinks[this.chainLinks.length - 1].position.x,
-      this.lantern.position.y -
-        this.chainLinks[this.chainLinks.length - 1].position.y
-    );
     this.lantern.update();
-    this.updateLantern();
+    // Update the first chain link based on the mouse position
+    if (this.connectedToMouse) {
+      this.updateFirstChainLink();
+    }
   }
 
   /**
@@ -229,8 +213,8 @@ export class SuspendedLantern extends LightSource {
    * @override
    */
   distance(x, y) {
-    let neoX = this.lantern.position.x;
-    let neoY = this.lantern.position.y;
+    let neoX = Math.floor(this.lantern.position.x / this.grid.resolution);
+    let neoY = Math.floor(this.lantern.position.y / this.grid.resolution);
     return Math.sqrt((neoX - x) ** 2 + (neoY - y) ** 2) / this.lightingArea;
   }
 }
