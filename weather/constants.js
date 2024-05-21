@@ -41,7 +41,7 @@ export class Utils {
       MAX_DIFFERENCE: 10,
       MAX_ADJUSTMENT: 10,
       MAX_VELOCITY_CORRECTION: 10,
-      CONSTRAINT_ITERATIONS: 3,
+      CONSTRAINT_ITERATIONS: 2,
     },
   };
 
