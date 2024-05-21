@@ -12,7 +12,10 @@ export class PhysicsObject {
   }
 
   addConstraint(constraint) {
-    if (!(constraint instanceof Constraint)) {
+    if (
+      !(constraint instanceof Constraint) &&
+      !(constraint instanceof FixedConstraint)
+    ) {
       throw new Error("Invalid constraint");
     }
     this.constraints.push(constraint);
@@ -76,14 +79,11 @@ export class PhysicsObject {
   }
 }
 
-export class Constraint {
-  constructor(link1, link2, length, stiffness = 0.4) {
+export class FixedConstraint {
+  constructor(link1, link2, length) {
     this.link1 = link1;
     this.link2 = link2;
     this.length = length;
-    this.stiffness = stiffness;
-    this.breakThreshold = 2000;
-    this.broken = false;
   }
 
   calculateDistance() {
@@ -98,18 +98,49 @@ export class Constraint {
     return { x: dx / distance, y: dy / distance };
   }
 
+  apply() {
+    if (this.broken) {
+      return;
+    }
+    let distance = this.calculateDistance();
+    let difference = this.length * Utils.CONSTANTS.CANVAS.RESOLUTION - distance;
+    let direction = this.calculateDirection(distance);
+  }
+}
+
+export class Constraint {
+  constructor(link1, link2, length, stiffness = 0.1) {
+    this.link1 = link1;
+    this.link2 = link2;
+    this.length = length;
+    this.stiffness = stiffness;
+    this.breakThreshold = 200;
+    this.broken = false;
+  }
+
+  calculateDistance() {
+    const deltaX = this.link2.position.x - this.link1.position.x;
+    const deltaY = this.link2.position.y - this.link1.position.y;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  }
+
+  calculateDirection(distance) {
+    const deltaX = this.link2.position.x - this.link1.position.x;
+    const deltaY = this.link2.position.y - this.link1.position.y;
+    return { x: deltaX / distance, y: deltaY / distance };
+  }
+
   calculateAdjustment(difference, totalMass) {
-    let adjustment1 = difference * (this.link2.mass / totalMass);
-    let adjustment2 = difference * (this.link1.mass / totalMass);
+    const adjustment1 = difference * (this.link2.mass / totalMass);
+    const adjustment2 = difference * (this.link1.mass / totalMass);
     return { adjustment1, adjustment2 };
   }
 
   calculateVelocityCorrection(adjustment, direction) {
-    let velocityCorrection = {
+    return {
       x: adjustment * direction.x,
       y: adjustment * direction.y,
     };
-    return velocityCorrection;
   }
 
   applyVelocityCorrection(velocityCorrection1, velocityCorrection2) {
@@ -120,89 +151,81 @@ export class Constraint {
   }
 
   applyErrorCorrection(adjustment, direction) {
-    let errorCorrection = {
+    return {
       x: this.stiffness * adjustment * direction.x,
       y: this.stiffness * adjustment * direction.y,
     };
-    return errorCorrection;
   }
 
   apply() {
     if (this.broken) {
       return;
     }
-    let distance = this.calculateDistance();
-    if (distance > this.breakThreshold) {
-      this.broken = true;
-    }
-    let difference = this.length * Utils.CONSTANTS.CANVAS.RESOLUTION - distance;
-    difference = Math.min(
-      Math.max(difference, -Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE),
-      Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE
-    );
 
-    let direction = this.calculateDirection(distance);
+    const distance = this.calculateDistance();
+    this.checkIfBroken(distance);
 
-    let totalMass = this.link1.mass + this.link2.mass;
-    let { adjustment1, adjustment2 } = this.calculateAdjustment(
+    const difference = this.calculateDifference(distance);
+    const direction = this.calculateDirection(distance);
+    const totalMass = this.link1.mass + this.link2.mass;
+    const { adjustment1, adjustment2 } = this.calculateAdjustment(
       difference,
       totalMass
     );
-    adjustment1 = Math.min(
-      Math.max(adjustment1, -Utils.CONSTANTS.PHYSICS.MAX_ADJUSTMENT),
-      Utils.CONSTANTS.PHYSICS.MAX_ADJUSTMENT
-    );
-    adjustment2 = Math.min(
-      Math.max(adjustment2, -Utils.CONSTANTS.PHYSICS.MAX_ADJUSTMENT),
-      Utils.CONSTANTS.PHYSICS.MAX_ADJUSTMENT
-    );
 
-    let velocityCorrection1 = this.calculateVelocityCorrection(
+    const velocityCorrection1 = this.calculateAndLimitVelocityCorrection(
       adjustment1,
       direction
     );
-    velocityCorrection1.x = Math.min(
-      Math.max(
-        velocityCorrection1.x,
-        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-      ),
-      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-    );
-    velocityCorrection1.y = Math.min(
-      Math.max(
-        velocityCorrection1.y,
-        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-      ),
-      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-    );
-
-    let velocityCorrection2 = this.calculateVelocityCorrection(
+    const velocityCorrection2 = this.calculateAndLimitVelocityCorrection(
       adjustment2,
       direction
-    );
-    velocityCorrection2.x = Math.min(
-      Math.max(
-        velocityCorrection2.x,
-        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-      ),
-      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-    );
-    velocityCorrection2.y = Math.min(
-      Math.max(
-        velocityCorrection2.y,
-        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-      ),
-      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
     );
 
     this.applyVelocityCorrection(velocityCorrection1, velocityCorrection2);
 
-    let errorCorrection1 = this.applyErrorCorrection(adjustment1, direction);
+    const errorCorrection1 = this.applyErrorCorrection(adjustment1, direction);
     this.link1.position.x -= errorCorrection1.x;
     this.link1.position.y -= errorCorrection1.y;
 
-    let errorCorrection2 = this.applyErrorCorrection(adjustment2, direction);
+    const errorCorrection2 = this.applyErrorCorrection(adjustment2, direction);
     this.link2.position.x += errorCorrection2.x;
     this.link2.position.y += errorCorrection2.y;
+  }
+
+  checkIfBroken(distance) {
+    if (distance > this.breakThreshold) {
+      this.broken = true;
+    }
+  }
+
+  calculateDifference(distance) {
+    let difference = this.length * Utils.CONSTANTS.CANVAS.RESOLUTION - distance;
+    return Math.min(
+      Math.max(difference, -Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE),
+      Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE
+    );
+  }
+
+  calculateAndLimitVelocityCorrection(adjustment, direction) {
+    let velocityCorrection = this.calculateVelocityCorrection(
+      adjustment,
+      direction
+    );
+    velocityCorrection.x = Math.min(
+      Math.max(
+        velocityCorrection.x,
+        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
+      ),
+      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
+    );
+    velocityCorrection.y = Math.min(
+      Math.max(
+        velocityCorrection.y,
+        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
+      ),
+      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
+    );
+    return velocityCorrection;
   }
 }

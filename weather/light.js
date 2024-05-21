@@ -65,13 +65,13 @@ export class SuspendedLantern extends LightSource {
     super(grid, mouse, radius, color);
 
     this.chainLinkProperties = {
-      mass: 3,
-      number: 20,
+      mass: 2,
+      number: 10,
       length: 2,
     };
 
     this.lanternProperties = {
-      mass: 20,
+      mass: 15,
       radius: 5,
     };
 
@@ -122,10 +122,7 @@ export class SuspendedLantern extends LightSource {
           this.chainLinks[i - 1].position.y + this.chainLinkProperties.length
         );
       }
-      let newMass =
-        i == 0
-          ? this.chainLinkProperties.mass * this.chainLinkProperties.number
-          : this.chainLinkProperties.mass;
+      let newMass = this.chainLinkProperties.mass;
       let newLink = new ChainLink(
         this.grid,
         x,
@@ -134,10 +131,11 @@ export class SuspendedLantern extends LightSource {
         this.chainLinkProperties.length,
         "rgba(255, 255, 255, 1)"
       );
+      console.log("New link mass : ", newLink);
       this.chainLinks.push(newLink);
       // Add constraints
       if (i > 0) {
-        const stiffness = i == 1 ? 1 : 0.9;
+        const stiffness = i == 1 ? 0.9 : 0.5;
         const constraint = new Constraint(
           this.chainLinks[i - 1],
           this.chainLinks[i],
