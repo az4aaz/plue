@@ -195,7 +195,7 @@ export class Constraint {
 
   checkIfBroken(distance) {
     if (distance > this.breakThreshold) {
-      this.broken = true;
+      // this.broken = true;
     }
   }
 
