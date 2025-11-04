@@ -9,16 +9,17 @@ export class RainController {
    *
    * @param { NeoPixelGrid } grid   The grid to draw the raindrops and splashes on.
    * @param { { x: number, y: number } } mouse  The mouse position.
-   * @param { LightSource } light  The light source.
+   * @param { LightSource[] } lights  The light sources.
    * @property { Raindrop[] } raindrops  The raindrops to be generated and moved.
    * @property { Splash[] } splashes The splashes to be generated and moved.
    */
-  constructor(grid, mouse, light) {
+  constructor(grid, mouse, lights) {
     this.grid = grid;
     this.mouse = mouse;
-    this.light = light;
+    this.lights = lights;
     this.raindrops = [];
     this.splashes = [];
+    this.frameCounter = 0;
 
     window.addEventListener("raindropCollision", (e) => {
       this.handleSplashCollision(e.detail);
@@ -29,7 +30,7 @@ export class RainController {
    * Generates a raindrop and pushes it to the raindrops array.
    */
   generateRaindrop() {
-    const newDrop = new Raindrop(this.grid, this.mouse, this.light);
+    const newDrop = new Raindrop(this.grid, this.mouse, this.lights);
     this.raindrops.push(newDrop);
   }
 
@@ -47,7 +48,7 @@ export class RainController {
       Math.floor(Math.random() * Utils.CONSTANTS.SPLASH.MAX_SPLASHES) +
       Utils.CONSTANTS.SPLASH.MIN_SPLASHES;
     for (let i = 0; i < numSplashes; i++) {
-      this.splashes.push(new Splash(this.grid, this.mouse, dropX, dropY));
+      this.splashes.push(new Splash(this.grid, this.mouse, dropX, dropY, this.lights));
     }
   }
 
@@ -65,7 +66,8 @@ export class RainController {
    * Moves the raindrops.
    */
   moveRaindrops() {
-    for (const drop of this.raindrops) {
+    for (let i = this.raindrops.length - 1; i >= 0; i--) {
+      const drop = this.raindrops[i];
       drop.move();
       if (drop.isOnTheGround()) {
         const collisionEvent = new CustomEvent("raindropCollision", {
@@ -76,7 +78,8 @@ export class RainController {
       if (drop.isOnCanvas()) {
         drop.render();
       } else {
-        this.delRaindrop(drop);
+        this.raindrops[i] = this.raindrops[this.raindrops.length - 1];
+        this.raindrops.pop();
       }
     }
   }
@@ -85,14 +88,16 @@ export class RainController {
    * Moves the splashes.
    */
   moveSplashes() {
-    for (const splash of this.splashes) {
+    for (let i = this.splashes.length - 1; i >= 0; i--) {
+      const splash = this.splashes[i];
       splash.update();
       if (
         splash.y > this.grid.height ||
         splash.x > this.grid.width ||
         splash.currentTime - splash.startTime > Utils.CONSTANTS.SPLASH.DURATION
       ) {
-        this.delSplash(splash);
+        this.splashes[i] = this.splashes[this.splashes.length - 1];
+        this.splashes.pop();
       }
     }
   }
@@ -103,7 +108,8 @@ export class RainController {
   delRaindrop(drop) {
     const dropIndex = this.raindrops.indexOf(drop);
     if (dropIndex > -1) {
-      this.raindrops.splice(dropIndex, 1);
+      this.raindrops[dropIndex] = this.raindrops[this.raindrops.length - 1];
+      this.raindrops.pop();
     }
   }
 
@@ -113,7 +119,8 @@ export class RainController {
   delSplash(splash) {
     const splashIndex = this.splashes.indexOf(splash);
     if (splashIndex > -1) {
-      this.splashes.splice(splashIndex, 1);
+      this.splashes[splashIndex] = this.splashes[this.splashes.length - 1];
+      this.splashes.pop();
     }
   }
 
@@ -121,7 +128,10 @@ export class RainController {
    * Updates and renders the raindrops and splashes.
    */
   updateAndRender() {
-    this.generateRaindrop();
+    if (this.frameCounter % 2 === 0) {
+      this.generateRaindrop();
+    }
+    this.frameCounter++;
     this.moveRaindrops();
     this.moveSplashes();
   }

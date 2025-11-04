@@ -53,14 +53,16 @@ export class Fire {
   }
 
   renderParticles() {
-    for (let particle of this.particles) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const particle = this.particles[i];
       if (particle.life > 0) {
         let px = Math.floor(particle.x / this.grid.resolution);
         let py = Math.floor(particle.y / this.grid.resolution);
         let color = Utils.alternateColor(particle.color, particle.life / 10);
         this.grid.setPixel(px, py, color);
       } else {
-        this.particles = this.particles.filter((p) => p !== particle);
+        this.particles[i] = this.particles[this.particles.length - 1];
+        this.particles.pop();
       }
     }
   }
