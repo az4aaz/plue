@@ -7,7 +7,7 @@ export class Raindrop {
    *
    * @param { NeoPixelGrid } grid The grid to draw the raindrops on.
    * @param { { x: number, y: number } } mouse  The mouse position.
-   * @param { LightSource } light  The light source.
+   * @param { LightSource[] } lights  The light sources.
    * @property { number } lineLength  The length of the raindrop.
    * @property { number } x The x-coordinate of the raindrop.
    * @property { number } y The y-coordinate of the raindrop.
@@ -17,10 +17,10 @@ export class Raindrop {
    *
    * @todo Adapt width and speed to the new weight system | constants.js -> weight()
    */
-  constructor(grid, mouse, light) {
+  constructor(grid, mouse, lights) {
     this.grid = grid;
     this.mouse = mouse;
-    this.light = light;
+    this.lights = lights;
     this.lineLength = Math.floor(
       Utils.randomBetween(
         Utils.CONSTANTS.RAINDROP.MIN_LINE_LENGTH,
@@ -54,21 +54,25 @@ export class Raindrop {
    * Renders the raindrop.
    */
   render() {
-    let cosI = this.cosAngle;
-    let sinI = this.sinAngle;
     for (let i = 0; i < this.lineLength; i++) {
-      let x = (this.x + cosI * i) | 0;
-      let y = (this.y + sinI * i) | 0;
-      // We dim the color of the raindrop depending on the distance from the light source.
-      let distance = this.light.distance(x, y);
+      let x = (this.x + this.cosAngle * i) | 0;
+      let y = (this.y + this.sinAngle * i) | 0;
+
+      let minDistance = Infinity;
+      for (const light of this.lights) {
+        const dist = light.distance(x, y);
+        if (dist < minDistance) {
+          minDistance = dist;
+          if (minDistance < 0.3) break;
+        }
+      }
+
       let color = Utils.dimColor(
         Utils.CONSTANTS.RAINDROP.COLOR,
-        distance,
+        minDistance,
         this.grid.resolution
       );
       this.grid.setPixel(x, y, color);
-      cosI += this.cosAngle;
-      sinI += this.sinAngle;
     }
   }
 

@@ -7,15 +7,17 @@ export class Splash {
    * @param { { x: number, y: number } } mouse  The mouse position.
    * @param { number } dropX  The x-coordinate of the raindrop.
    * @param { number } dropY  The y-coordinate of the raindrop.
+   * @param { LightSource[] } lights  The light sources.
    * @property { number } x The x-coordinate of the splash.
    * @property { number } y The y-coordinate of the splash.
    * @property { number } size The size of the splash.
    * @property { number } speed The speed of the splash.
    * @property { number } startTime The time when the splash was created.é
    */
-  constructor(grid, mouse, dropX, dropY) {
+  constructor(grid, mouse, dropX, dropY, lights) {
     this.grid = grid;
     this.mouse = mouse;
+    this.lights = lights;
     this.x = dropX;
     this.y = dropY;
     this.speed = Math.random() * 2;
@@ -34,9 +36,28 @@ export class Splash {
     this.render();
   }
 
+  /**
+   * Renders the splash.
+   */
   render() {
-    if (this.y < this.grid.height - 1 && this.y > this.grid.height) {
-      this.grid.setPixel(this.x, this.y, Utils.CONSTANTS.RAINDROP.COLOR);
+    const px = Math.floor(this.x);
+    const py = Math.floor(this.y);
+    if (py >= 0 && py < this.grid.height && px >= 0 && px < this.grid.width) {
+      let minDistance = Infinity;
+      for (const light of this.lights) {
+        const dist = light.distance(px, py);
+        if (dist < minDistance) {
+          minDistance = dist;
+          if (minDistance < 0.3) break;
+        }
+      }
+
+      const color = Utils.dimColor(
+        Utils.CONSTANTS.RAINDROP.COLOR,
+        minDistance,
+        this.grid.resolution
+      );
+      this.grid.setPixel(px, py, color);
     }
   }
 }
