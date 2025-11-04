@@ -28,6 +28,7 @@ export class Utils {
     },
     MOUSE: {
       RADIUS: 45,
+      REPULSION_STRENGTH: 8,
     },
     GROUND: {
       LEVEL: 5,
@@ -41,7 +42,69 @@ export class Utils {
       MAX_DIFFERENCE: 10,
       MAX_ADJUSTMENT: 10,
       MAX_VELOCITY_CORRECTION: 10,
-      CONSTRAINT_ITERATIONS: 2,
+      CONSTRAINT_ITERATIONS: 5,
+      WIND: {
+        BASE_STRENGTH: 0.1,
+        VARIATION_STRENGTH: 0.08,
+        FREQUENCY: 0.02,
+        GUST_FREQUENCY: 0.005,
+        GUST_STRENGTH: 0.2,
+      },
+      TILT: {
+        DISPLACEMENT_FACTOR: 1.5,
+        INTERPOLATION: 0.05,
+        ANGLE_MULTIPLIER: 0.1,
+      },
+    },
+    PLANTS: {
+      DEFAULTS: {
+        vineCount: 4,
+        branchLength: 3,
+        meander: 0.8,
+        branchProbability: 0.18,
+        leafProbability: 0.25,
+        sparseLeafProbability: 0.1,
+        maxLongBranches: 2,
+        longBranchProbability: 0.2,
+        minLongBranchLength: 6,
+        maxLongBranchLength: 14,
+        longBranchVerticalRiseChance: 0.35,
+        longBranchDroopChance: 0.15,
+        longBranchExtraHorizontalChance: 0.35,
+        longBranchSproutChance: 0.12,
+        sproutLength: 2,
+        stemColor: "rgba(52, 101, 36, 1)",
+        leafColor: "rgba(48, 105, 54, 1)",
+        fadedLeafColor: "rgba(68, 120, 68, 1)",
+      },
+    },
+    WALL: {
+      DEFAULTS: {
+        clusterCountFactor: 3500,
+        minClusterCount: 3,
+        minHeightFactor: 0.18,
+        maxHeightFactor: 0.78,
+        mortarAlphaRange: [0.04, 0.08],
+        brickAlphaRange: [0.08, 0.16],
+        brickGrayRange: [60, 92],
+        mortarGrayRange: [45, 65],
+        erosionChance: 0.25,
+      },
+    },
+    AURA: {
+      DEFAULTS: {
+        radius: 20,
+        color: "rgba(170, 120, 255, 0.18)",
+        maxParticles: 44,
+        spawnPerFrame: 1,
+        particleLife: 10,
+        particleSpeed: 0.5,
+        particleRadiusRange: [2, 6],
+        particleColor: "rgba(190, 140, 255, 1)",
+        auraRings: 3,
+        baseAlpha: 0.08,
+        particleBoostAlpha: 0.22,
+      },
     },
   };
 
@@ -110,10 +173,11 @@ export class Utils {
    */
   static dimColor(color, distance, resolution) {
     let alpha = Math.max(0.1, Math.min(1, 1 - distance / resolution));
-    return color.replace(
-      /rgba\((\d+), (\d+), (\d+), (\d+)\)/,
-      `rgba($1, $2, $3, ${alpha})`
-    );
+    // Extract RGB values directly from the color string
+    const lastComma = color.lastIndexOf(',');
+    if (lastComma === -1) return color;
+    const rgbPart = color.substring(0, lastComma);
+    return `${rgbPart}, ${alpha})`;
   }
 
   /**
@@ -179,10 +243,21 @@ export class Utils {
    * @static
    */
   static alternateColor(color, alpha) {
-    return color.replace(
-      /rgba\((\d+), (\d+), (\d+), (\d+)\)/,
-      `rgba($1, $2, $3, ${alpha})`
-    );
+    const lastComma = color.lastIndexOf(',');
+    if (lastComma === -1) return color;
+    const rgbPart = color.substring(0, lastComma);
+    return `${rgbPart}, ${alpha})`;
+  }
+
+  /**
+   * Merge a set of options with defaults without mutating either source.
+   * @param {object} defaults
+   * @param {object} [overrides]
+   * @returns {object}
+   * @static
+   */
+  static mergeOptions(defaults, overrides = {}) {
+    return { ...defaults, ...(overrides || {}) };
   }
 
   /**
