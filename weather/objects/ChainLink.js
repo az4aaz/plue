@@ -2,42 +2,19 @@ import { PhysicsObject } from "../physics/object.js";
 import { Utils } from "../constants.js";
 
 export class ChainLink extends PhysicsObject {
-  /**
-   * A chain link that got physics.
-   *
-   * @param { NeoPixelGrid } grid The grid to draw the lantern on.
-   * @param { number } x The x-coordinate of the lantern.
-   * @param { number } y The y-coordinate of the lantern.
-   * @param { number } mass The mass of the lantern.
-   * @param { number } chainLinkLength The length of the chain link.
-   * @param { string } color The color of the lantern.
-   */
-  constructor(
-    grid,
-    x,
-    y,
-    mass,
-    chainLinkLength,
-    color = "rgba(255, 255, 255, 1)",
-    radius = 20
-  ) {
-    super(x, y, mass);
-    this.grid = grid;
+  constructor(grid, x, y, mass, chainLinkLength, color = "rgba(255, 255, 255, 1)", radius = 20) {
+    super(grid, x, y, mass, 0.05, 0.98);
     this.radius = radius;
     this.color = color;
     this.chainLinkLength = chainLinkLength;
   }
 
-  /**
-   * Renders the lantern.
-   * @param { number } index The index of the chain link.
-   */
   render(index) {
     let color = this.color;
     if (index % 2 === 0) {
       color = Utils.alternateColor(color, 0.5);
     }
-    for (let i = 0; i < this.chainLinkLength - 1; i++) {
+    for (let i = 0; i < this.chainLinkLength; i++) {
       let x = Math.floor(this.position.x / this.grid.resolution);
       let y = Math.floor(this.position.y / this.grid.resolution);
       this.grid.setPixel(x, y + i, color);

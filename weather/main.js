@@ -3,6 +3,9 @@ import { SuspendedLantern } from "./light.js";
 import { Utils } from "./constants.js";
 import { NeoPixelGrid } from "./grid.js";
 import { Image } from "./image.js";
+import { WallFragments } from "./background/WallFragments.js";
+import { ClimbingPlants } from "./plants/ClimbingPlants.js";
+import { PurpleAura } from "./effects/PurpleAura.js";
 
 // Initialize mouse position
 let mouse = {
@@ -16,8 +19,8 @@ let grid;
 // Initialize rain controller
 let rainController;
 
-// Initialize light
-let light;
+// Initialize lights
+let lights = [];
 
 // Initialize weather
 let weather = "rain";
@@ -30,6 +33,9 @@ window.Utils = Utils;
 
 // Initialize the image
 let img;
+let climbingPlants;
+let wallFragments;
+let aura;
 
 // Initialize the image
 
@@ -50,8 +56,18 @@ const pInstance = new p5((p) => {
       p.width
     );
     img = new Image(grid, "../assets/img/courbet.png", 0, 0);
-    light = new SuspendedLantern(grid, mouse);
-    rainController = new RainController(grid, mouse, light);
+
+    const leftPos = { x: 100, y: 50 };
+    const rightPos = { x: p.width - 100, y: 50 };
+    lights = [];
+    aura = new PurpleAura(grid, mouse);
+    lights.push(aura);
+    lights.push(new SuspendedLantern(grid, mouse, leftPos, 50, "rgba(255, 255, 255, 0.5)", false));
+    lights.push(new SuspendedLantern(grid, mouse, rightPos, 50, "rgba(255, 255, 255, 0.5)", false));
+
+    rainController = new RainController(grid, mouse, lights);
+    wallFragments = new WallFragments(grid, lights);
+    climbingPlants = new ClimbingPlants(grid, lights);
   };
 
   p.draw = () => {
@@ -59,15 +75,21 @@ const pInstance = new p5((p) => {
     p.clear();
     p.background(Utils.CONSTANTS.CANVAS.BACKGROUND_COLOR);
     grid.clear();
+    wallFragments.render();
     img.render();
+    climbingPlants.render();
 
     if (!playing) {
       rainController.render();
     } else {
       rainController.updateAndRender(p);
     }
-    light.move();
-    light.render();
+
+    for (const light of lights) {
+      light.move();
+      light.render();
+    }
+
     grid.render();
   };
 

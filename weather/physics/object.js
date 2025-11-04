@@ -1,7 +1,8 @@
 import { Utils } from "../constants.js";
 
 export class PhysicsObject {
-  constructor(x, y, mass, friction = 0.1, damping = 0.99) {
+  constructor(grid, x, y, mass, friction = 0.1, damping = 0.99) {
+    this.grid = grid;
     this.position = { x, y };
     this.velocity = { x: 0, y: 0 };
     this.acceleration = { x: 0, y: 0 };
@@ -45,12 +46,36 @@ export class PhysicsObject {
     this.applyForce(gravity);
   }
 
+  applyWind(windForce) {
+    let wind = {
+      x: windForce.x * this.mass * 0.5,
+      y: windForce.y * this.mass * 0.5,
+    };
+    this.applyForce(wind);
+  }
+
   applyFriction() {
     let frictionForce = {
       x: -this.velocity.x * this.friction,
       y: -this.velocity.y * this.friction,
     };
     this.applyForce(frictionForce);
+  }
+
+  checkMouseCollision(mouse, mouseRadius) {
+    const dx = this.position.x - mouse.x;
+    const dy = this.position.y - mouse.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < mouseRadius) {
+      const repulsionStrength = Utils.CONSTANTS.MOUSE.REPULSION_STRENGTH;
+      const force = (mouseRadius - distance) / mouseRadius * repulsionStrength;
+      const dirX = dx / distance;
+      const dirY = dy / distance;
+
+      this.velocity.x += dirX * force;
+      this.velocity.y += dirY * force;
+    }
   }
 
   update() {
@@ -84,6 +109,7 @@ export class FixedConstraint {
     this.link1 = link1;
     this.link2 = link2;
     this.length = length;
+    this.targetLength = length * Utils.CONSTANTS.CANVAS.RESOLUTION;
   }
 
   calculateDistance() {
@@ -103,7 +129,7 @@ export class FixedConstraint {
       return;
     }
     let distance = this.calculateDistance();
-    let difference = this.length * Utils.CONSTANTS.CANVAS.RESOLUTION - distance;
+    let difference = this.targetLength - distance;
     let direction = this.calculateDirection(distance);
   }
 }
@@ -116,18 +142,25 @@ export class Constraint {
     this.stiffness = stiffness;
     this.breakThreshold = 200;
     this.broken = false;
+    this.targetLength = length * Utils.CONSTANTS.CANVAS.RESOLUTION;
+  }
+
+  calculateDistanceAndDirection() {
+    const deltaX = this.link2.position.x - this.link1.position.x;
+    const deltaY = this.link2.position.y - this.link1.position.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    return {
+      distance,
+      direction: { x: deltaX / distance, y: deltaY / distance },
+      deltaX,
+      deltaY
+    };
   }
 
   calculateDistance() {
     const deltaX = this.link2.position.x - this.link1.position.x;
     const deltaY = this.link2.position.y - this.link1.position.y;
     return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-  }
-
-  calculateDirection(distance) {
-    const deltaX = this.link2.position.x - this.link1.position.x;
-    const deltaY = this.link2.position.y - this.link1.position.y;
-    return { x: deltaX / distance, y: deltaY / distance };
   }
 
   calculateAdjustment(difference, totalMass) {
@@ -158,37 +191,25 @@ export class Constraint {
   }
 
   apply() {
-    if (this.broken) {
-      return;
-    }
+    if (this.broken) return;
 
-    const distance = this.calculateDistance();
-    this.checkIfBroken(distance);
+    const result = this.calculateDistanceAndDirection();
+    this.checkIfBroken(result.distance);
 
-    const difference = this.calculateDifference(distance);
-    const direction = this.calculateDirection(distance);
+    const difference = this.calculateDifference(result.distance);
     const totalMass = this.link1.mass + this.link2.mass;
-    const { adjustment1, adjustment2 } = this.calculateAdjustment(
-      difference,
-      totalMass
-    );
+    const { adjustment1, adjustment2 } = this.calculateAdjustment(difference, totalMass);
 
-    const velocityCorrection1 = this.calculateAndLimitVelocityCorrection(
-      adjustment1,
-      direction
-    );
-    const velocityCorrection2 = this.calculateAndLimitVelocityCorrection(
-      adjustment2,
-      direction
-    );
+    const velocityCorrection1 = this.calculateAndLimitVelocityCorrection(adjustment1, result.direction);
+    const velocityCorrection2 = this.calculateAndLimitVelocityCorrection(adjustment2, result.direction);
 
     this.applyVelocityCorrection(velocityCorrection1, velocityCorrection2);
 
-    const errorCorrection1 = this.applyErrorCorrection(adjustment1, direction);
+    const errorCorrection1 = this.applyErrorCorrection(adjustment1, result.direction);
     this.link1.position.x -= errorCorrection1.x;
     this.link1.position.y -= errorCorrection1.y;
 
-    const errorCorrection2 = this.applyErrorCorrection(adjustment2, direction);
+    const errorCorrection2 = this.applyErrorCorrection(adjustment2, result.direction);
     this.link2.position.x += errorCorrection2.x;
     this.link2.position.y += errorCorrection2.y;
   }
@@ -200,32 +221,20 @@ export class Constraint {
   }
 
   calculateDifference(distance) {
-    let difference = this.length * Utils.CONSTANTS.CANVAS.RESOLUTION - distance;
-    return Math.min(
-      Math.max(difference, -Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE),
-      Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE
-    );
+    let diff = this.targetLength - distance;
+    const maxDiff = Utils.CONSTANTS.PHYSICS.MAX_DIFFERENCE;
+    if (diff > maxDiff) return maxDiff;
+    if (diff < -maxDiff) return -maxDiff;
+    return diff;
   }
 
   calculateAndLimitVelocityCorrection(adjustment, direction) {
-    let velocityCorrection = this.calculateVelocityCorrection(
-      adjustment,
-      direction
-    );
-    velocityCorrection.x = Math.min(
-      Math.max(
-        velocityCorrection.x,
-        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-      ),
-      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-    );
-    velocityCorrection.y = Math.min(
-      Math.max(
-        velocityCorrection.y,
-        -Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-      ),
-      Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION
-    );
-    return velocityCorrection;
+    let vc = this.calculateVelocityCorrection(adjustment, direction);
+    const max = Utils.CONSTANTS.PHYSICS.MAX_VELOCITY_CORRECTION;
+    if (vc.x > max) vc.x = max;
+    else if (vc.x < -max) vc.x = -max;
+    if (vc.y > max) vc.y = max;
+    else if (vc.y < -max) vc.y = -max;
+    return vc;
   }
 }

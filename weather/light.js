@@ -2,17 +2,9 @@ import { Utils } from "./constants.js";
 import { Lantern } from "./objects/Lantern.js";
 import { ChainLink } from "./objects/ChainLink.js";
 import { Constraint } from "./physics/object.js";
+import { WindSystem } from "./physics/wind.js";
 
 export class LightSource {
-  /**
-   * A single light source that emits to a certain radius around it.
-   *
-   * @param { NeoPixelGrid } grid   The grid to draw the light source on.
-   * @param { { x: number, y: number } } mouse  The mouse position.
-   * @param { number } radius   The radius of the light source.
-   * @param { string } color    The color of the light source.
-   * @property { number } lightingArea The area around the light source that is lit.
-   */
   constructor(grid, mouse, radius = 20, color = "rgba(255, 255, 255)") {
     this.grid = grid;
     this.mouse = mouse;
@@ -21,6 +13,8 @@ export class LightSource {
     this.x = this.mouse.x;
     this.y = this.mouse.y;
     this.lightingArea = (radius * 3) / this.grid.resolution;
+    this.cachedNeoX = this.x / this.grid.resolution;
+    this.cachedNeoY = this.y / this.grid.resolution;
   }
 
   /**
@@ -31,24 +25,15 @@ export class LightSource {
     this.grid.p.ellipse(this.x, this.y, this.radius, this.radius);
   }
 
-  /**
-   * Moves the light source.
-   */
   move() {
     this.x = this.mouse.x;
     this.y = this.mouse.y;
+    this.cachedNeoX = this.x / this.grid.resolution;
+    this.cachedNeoY = this.y / this.grid.resolution;
   }
 
-  /**
-   * How far is this object from the light source ?
-   * @param { number } x The x-coordinate of the object.
-   * @param { number } y The y-coordinate of the object.
-   * @returns { number } The distance from the light source
-   */
   distance(x, y) {
-    let neoX = this.x / this.grid.resolution;
-    let neoY = this.y / this.grid.resolution;
-    return Math.sqrt((neoX - x) ** 2 + (neoY - y) ** 2) / this.lightingArea;
+    return Math.sqrt((this.cachedNeoX - x) ** 2 + (this.cachedNeoY - y) ** 2) / this.lightingArea;
   }
 }
 
@@ -61,35 +46,35 @@ export class SuspendedLantern extends LightSource {
   /**
    * A single light source that emits to a certain radius around it and is suspended by a chain.
    */
-  constructor(grid, mouse, radius = 50, color = "rgba(255, 255, 255, 0.5)") {
+  constructor(grid, mouse, anchorPoint, radius = 50, color = "rgba(255, 255, 255, 0.5)", followMouse = true) {
     super(grid, mouse, radius, color);
 
     this.chainLinkProperties = {
-      mass: 2,
-      number: 10,
-      length: 2,
+      mass: 1,
+      number: 20,
+      length: 1,
     };
 
     this.lanternProperties = {
-      mass: 15,
-      radius: 5,
+      mass: 5,
+      radius: 6,
     };
 
-    this.connectedToMouse = true;
+    this.anchorPoint = anchorPoint;
+    this.followMouse = followMouse;
+    this.windSystem = new WindSystem();
 
     this.generateChainLinks();
     this.generateLantern();
+
+    this.cachedLanternX = Math.floor(this.lantern.position.x / this.grid.resolution);
+    this.cachedLanternY = Math.floor(this.lantern.position.y / this.grid.resolution);
   }
 
-  /**
-   * Calculates lantern properties.
-   * @param { number } resolutionFactor The resolution factor.
-   */
   generateLantern() {
-    let lanternX = this.x;
-    let lanternY =
-      this.y +
-      this.chainLinkProperties.number * this.chainLinkProperties.length;
+    let lanternX = this.anchorPoint.x;
+    let lanternY = this.anchorPoint.y + this.chainLinkProperties.number * this.chainLinkProperties.length;
+
     this.lantern = new Lantern(
       this.grid,
       lanternX,
@@ -103,120 +88,118 @@ export class SuspendedLantern extends LightSource {
       new Constraint(
         this.chainLinks[this.chainLinks.length - 1],
         this.lantern,
-        this.chainLinkProperties.length
+        this.chainLinkProperties.length,
+        0.9
       )
     );
   }
 
-  /**
-   * Generates the chain links.
-   */
   generateChainLinks() {
     this.chainLinks = [];
     for (let i = 0; i < this.chainLinkProperties.number; i++) {
-      let x = Math.floor(this.x);
-      let y = Math.floor(this.y + i * this.chainLinkProperties.length);
+      let x = Math.floor(this.anchorPoint.x);
+      let y = Math.floor(this.anchorPoint.y + i * this.chainLinkProperties.length);
       if (i > 0) {
         x = Math.floor(this.chainLinks[i - 1].position.x);
-        y = Math.floor(
-          this.chainLinks[i - 1].position.y + this.chainLinkProperties.length
-        );
+        y = Math.floor(this.chainLinks[i - 1].position.y + this.chainLinkProperties.length);
       }
-      let newMass = this.chainLinkProperties.mass;
-      let newLink = new ChainLink(
-        this.grid,
-        x,
-        y,
-        newMass,
-        this.chainLinkProperties.length,
-        "rgba(255, 255, 255, 1)"
-      );
-      console.log("New link mass : ", newLink);
-      this.chainLinks.push(newLink);
-      // Add constraints
+      let link = new ChainLink(this.grid, x, y, this.chainLinkProperties.mass, this.chainLinkProperties.length, "rgba(255, 255, 255, 1)");
+      this.chainLinks.push(link);
       if (i > 0) {
-        const stiffness = i == 1 ? 0.9 : 0.5;
-        const constraint = new Constraint(
-          this.chainLinks[i - 1],
-          this.chainLinks[i],
-          this.chainLinkProperties.length,
-          stiffness
-        );
+        const constraint = new Constraint(this.chainLinks[i - 1], this.chainLinks[i], this.chainLinkProperties.length, 0.9);
         this.chainLinks[i - 1].addConstraint(constraint);
       }
     }
   }
 
-  /**
-   * Updates the position of the first chain link.
-   */
   updateFirstChainLink() {
-    this.chainLinks[0].position.x = this.mouse.x;
-    this.chainLinks[0].position.y = this.mouse.y;
+    if (this.followMouse) {
+      this.chainLinks[0].position.x = this.mouse.x;
+      this.chainLinks[0].position.y = this.mouse.y;
+    } else {
+      this.chainLinks[0].position.x = this.anchorPoint.x;
+      this.chainLinks[0].position.y = this.anchorPoint.y;
+    }
   }
 
-  /**
-   * Updates the position of a chain link using interpolation.
-   * @param { number } i The index of the chain link.
-   * @param { number } newX The new x-coordinate of the chain link.
-   * @param { number } newY The new y-coordinate of the chain link.
-   */
   updateChainLinkwithLerp(i, newX, newY) {
-    // Apply a delay to the movement of the chain link
-    this.chainLinks[i].position.x = Utils.lerp(
-      this.chainLinks[i].position.x,
-      newX,
-      this.INTERPOLATION_FACTOR
-    );
-    this.chainLinks[i].position.y = Utils.lerp(
-      this.chainLinks[i].position.y,
-      newY,
-      this.INTERPOLATION_FACTOR
-    );
+    this.chainLinks[i].position.x = Utils.lerp(this.chainLinks[i].position.x, newX, this.INTERPOLATION_FACTOR);
+    this.chainLinks[i].position.y = Utils.lerp(this.chainLinks[i].position.y, newY, this.INTERPOLATION_FACTOR);
   }
 
   move() {
-    // Update the position of the chain links
-    for (const chainLink of this.chainLinks) {
-      chainLink.update();
+    this.windSystem.update();
+    const wind = this.windSystem.getWindForce();
+
+    this.updateFirstChainLink();
+
+    const mouseRadius = Utils.CONSTANTS.MOUSE.RADIUS * this.grid.resolution;
+
+    for (let i = 0; i < this.chainLinks.length; i++) {
+      if (i === 0) continue;
+
+      this.chainLinks[i].applyGravity();
+      this.chainLinks[i].applyWind(wind);
+      this.chainLinks[i].applyFriction();
+      this.chainLinks[i].checkMouseCollision(this.mouse, mouseRadius);
+
+      this.chainLinks[i].velocity.x += this.chainLinks[i].acceleration.x;
+      this.chainLinks[i].velocity.y += this.chainLinks[i].acceleration.y;
+      this.chainLinks[i].position.x += this.chainLinks[i].velocity.x;
+      this.chainLinks[i].position.y += this.chainLinks[i].velocity.y;
+
+      this.chainLinks[i].checkCollisionWithGround();
+      this.chainLinks[i].acceleration = { x: 0, y: 0 };
     }
-    this.lantern.update();
-    // Update the first chain link based on the mouse position
-    if (this.connectedToMouse) {
-      this.updateFirstChainLink();
+
+    this.lantern.applyGravity();
+    this.lantern.applyWind(wind);
+    this.lantern.applyFriction();
+    this.lantern.checkMouseCollision(this.mouse, mouseRadius + this.lantern.collisionRadius);
+    this.lantern.velocity.x += this.lantern.acceleration.x;
+    this.lantern.velocity.y += this.lantern.acceleration.y;
+    this.lantern.position.x += this.lantern.velocity.x;
+    this.lantern.position.y += this.lantern.velocity.y;
+    this.lantern.checkCollisionWithGround();
+    this.lantern.acceleration = { x: 0, y: 0 };
+
+    for (let i = 0; i < Utils.CONSTANTS.PHYSICS.CONSTRAINT_ITERATIONS; i++) {
+      for (const link of this.chainLinks) {
+        for (const c of link.constraints) {
+          c.apply();
+        }
+      }
+      for (const c of this.lantern.constraints) {
+        c.apply();
+      }
     }
+
+    const topChainX = this.chainLinks[this.chainLinks.length - 1].position.x;
+    const horizontalDisplacement = topChainX - this.lantern.position.x;
+    const targetTilt = horizontalDisplacement * Utils.CONSTANTS.PHYSICS.TILT.DISPLACEMENT_FACTOR;
+    this.lantern.tiltAmount = this.lantern.tiltAmount || 0;
+    this.lantern.tiltAmount += (targetTilt - this.lantern.tiltAmount) * Utils.CONSTANTS.PHYSICS.TILT.INTERPOLATION;
+
+    this.cachedLanternX = Math.floor(this.lantern.position.x / this.grid.resolution);
+    this.cachedLanternY = Math.floor(this.lantern.position.y / this.grid.resolution);
+
+    this.lantern.fire.update();
   }
 
-  /**
-   * Renders the lantern and the chain.
-   * @override
-   */
   render() {
     this.drawChain();
     this.lantern.render();
   }
 
-  /**
-   * Draw chain (rectangles).
-   */
   drawChain() {
     let i = 0;
-    for (const chainLink of this.chainLinks) {
-      chainLink.render(i);
+    for (const link of this.chainLinks) {
+      link.render(i);
       i++;
     }
   }
 
-  /**
-   * How far is this object from the light source ? The light source being the lantern.
-   * @param { number } x The x-coordinate of the object.
-   * @param { number } y The y-coordinate of the object.
-   * @returns { number } The distance from the light source
-   * @override
-   */
   distance(x, y) {
-    let neoX = Math.floor(this.lantern.position.x / this.grid.resolution);
-    let neoY = Math.floor(this.lantern.position.y / this.grid.resolution);
-    return Math.sqrt((neoX - x) ** 2 + (neoY - y) ** 2) / this.lightingArea;
+    return Math.sqrt((this.cachedLanternX - x) ** 2 + (this.cachedLanternY - y) ** 2) / this.lightingArea;
   }
 }
