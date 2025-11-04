@@ -43,11 +43,11 @@ export class Lantern extends PhysicsObject {
     const w = this.radius;
     const h = this.radius * 2;
 
-    const roofColor = "rgba(120, 80, 40, 1)";
-    const frameColor = "rgba(80, 60, 40, 1)";
-    const baseColor = "rgba(100, 70, 40, 1)";
-    const glassTop = "rgba(255, 230, 170, 0.9)";
-    const glassBottom = "rgba(255, 220, 150, 0.7)";
+    const roofColor = Utils.applyLighting("rgba(120, 80, 40, 1)");
+    const frameColor = Utils.applyLighting("rgba(80, 60, 40, 1)");
+    const baseColor = Utils.applyLighting("rgba(100, 70, 40, 1)");
+    const glassTop = Utils.applyLighting("rgba(255, 230, 170, 0.9)");
+    const glassBottom = Utils.applyLighting("rgba(255, 220, 150, 0.7)");
 
     const angle = (this.tiltAmount || 0) * Utils.CONSTANTS.PHYSICS.TILT.ANGLE_MULTIPLIER;
     const cos = Math.cos(angle);

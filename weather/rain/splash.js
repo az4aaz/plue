@@ -12,7 +12,7 @@ export class Splash {
    * @property { number } y The y-coordinate of the splash.
    * @property { number } size The size of the splash.
    * @property { number } speed The speed of the splash.
-   * @property { number } startTime The time when the splash was created.é
+   * @property { number } startTime The time when the splash was created.
    */
   constructor(grid, mouse, dropX, dropY, lights) {
     this.grid = grid;
@@ -36,18 +36,17 @@ export class Splash {
     this.render();
   }
 
-  /**
-   * Renders the splash.
-   */
   render() {
     const px = Math.floor(this.x);
     const py = Math.floor(this.y);
     if (py >= 0 && py < this.grid.height && px >= 0 && px < this.grid.width) {
       let minDistance = Infinity;
+      let closestLight = null;
       for (const light of this.lights) {
         const dist = light.distance(px, py);
         if (dist < minDistance) {
           minDistance = dist;
+          closestLight = light;
           if (minDistance < 0.3) break;
         }
       }
@@ -55,7 +54,8 @@ export class Splash {
       const color = Utils.dimColor(
         Utils.CONSTANTS.RAINDROP.COLOR,
         minDistance,
-        this.grid.resolution
+        this.grid.resolution,
+        closestLight?.tintColor
       );
       this.grid.setPixel(px, py, color);
     }

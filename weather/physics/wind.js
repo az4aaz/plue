@@ -17,7 +17,11 @@ export class WindSystem {
     const base = Math.sin(this.time) * cfg.VARIATION_STRENGTH;
     const gust = Math.sin(this.gustTime) * Math.sin(this.gustTime * 2.7) * cfg.GUST_STRENGTH;
 
-    this.strength = cfg.BASE_STRENGTH + base + gust;
+    const multiplier = Math.max(
+      0,
+      typeof cfg.INTENSITY_MULTIPLIER === "number" ? cfg.INTENSITY_MULTIPLIER : 1
+    );
+    this.strength = (cfg.BASE_STRENGTH + base + gust) * multiplier;
     return { x: this.strength, y: 0 };
   }
 

@@ -7,8 +7,10 @@ export class PurpleAura extends LightSource {
     const mergedOptions = Utils.mergeOptions(defaults, options);
     const { radius, color, ...rest } = mergedOptions;
     super(grid, mouse, radius, color);
+    this.isAura = true;
     this.options = rest;
     this.particles = [];
+    this.burstParticles = [];
     const fallbackBase = this.extractRgb(defaults.color);
     const fallbackParticle = this.extractRgb(defaults.particleColor);
     this.baseColor = this.extractRgb(color) ?? fallbackBase;
@@ -23,6 +25,7 @@ export class PurpleAura extends LightSource {
     super.move();
     this.spawnParticles();
     this.updateParticles();
+    this.updateBurstParticles();
   }
 
   spawnParticles() {
@@ -70,6 +73,22 @@ export class PurpleAura extends LightSource {
     }
   }
 
+  updateBurstParticles() {
+    for (let i = this.burstParticles.length - 1; i >= 0; i--) {
+      const particle = this.burstParticles[i];
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.vx *= 0.92;
+      particle.vy *= 0.92;
+      particle.life -= 1;
+
+      if (particle.life <= 0) {
+        this.burstParticles[i] = this.burstParticles[this.burstParticles.length - 1];
+        this.burstParticles.pop();
+      }
+    }
+  }
+
   render() {
     const res = this.grid.resolution;
     const centerX = Math.floor(this.x / res);
@@ -77,6 +96,20 @@ export class PurpleAura extends LightSource {
     const width = this.grid.width;
     const height = this.grid.height;
     const maxParticleRadius = this.maxParticleRadius;
+    const lighting = Utils.CONSTANTS.LIGHTING || {};
+    const auraConfig = Utils.CONSTANTS.AURA || {};
+    const lightingScale =
+      typeof lighting.INTENSITY_MULTIPLIER === "number"
+        ? lighting.INTENSITY_MULTIPLIER
+        : 1;
+    const auraScale =
+      typeof auraConfig.INTENSITY_MULTIPLIER === "number"
+        ? auraConfig.INTENSITY_MULTIPLIER
+        : 1;
+    const auraMultiplier = Math.max(
+      0,
+      Math.min(1.5, lightingScale * auraScale)
+    );
 
     for (const offset of this.falloffKernel) {
       const gridX = centerX + offset.dx;
@@ -84,7 +117,12 @@ export class PurpleAura extends LightSource {
       if (gridX < 0 || gridX >= width || gridY < 0 || gridY >= height) {
         continue;
       }
-      this.applyAuraPixel(gridX, gridY, offset.alpha, this.baseColor);
+      this.applyAuraPixel(
+        gridX,
+        gridY,
+        offset.alpha * auraMultiplier,
+        this.baseColor
+      );
     }
 
     for (const particle of this.particles) {
@@ -102,7 +140,8 @@ export class PurpleAura extends LightSource {
       const tintAlpha =
         this.options.particleBoostAlpha *
         lifeProgress *
-        (particle.radius / maxParticleRadius);
+        (particle.radius / maxParticleRadius) *
+        auraMultiplier;
 
       this.applyAuraPixel(gridX, gridY, tintAlpha, this.particleColor);
 
@@ -121,6 +160,24 @@ export class PurpleAura extends LightSource {
           this.applyAuraPixel(nx, ny, neighborAlpha, this.particleColor);
         }
       }
+    }
+
+    for (const particle of this.burstParticles) {
+      const lifeProgress = particle.life / particle.maxLife;
+      if (lifeProgress <= 0) {
+        continue;
+      }
+
+      const gridX = Math.floor(particle.x / res);
+      const gridY = Math.floor(particle.y / res);
+      if (gridX < 0 || gridX >= width || gridY < 0 || gridY >= height) {
+        continue;
+      }
+
+      const tintAlpha =
+        this.options.particleBoostAlpha * 0.45 * lifeProgress * auraMultiplier;
+
+      this.applyAuraPixel(gridX, gridY, tintAlpha, this.particleColor);
     }
   }
 
@@ -224,5 +281,23 @@ export class PurpleAura extends LightSource {
       b: Number(b),
       a: Number(a),
     };
+  }
+
+  triggerBurst() {
+    const count = this.options.burstParticles ?? 24;
+    const speed = this.options.burstSpeed ?? 1;
+    const life = this.options.burstLife ?? 12;
+    for (let i = 0; i < count; i++) {
+      const angle = Utils.randomBetween(0, Math.PI * 2);
+      const velocity = Utils.randomBetween(speed * 0.6, speed);
+      this.burstParticles.push({
+        x: this.x + Utils.randomBetween(-3, 3),
+        y: this.y + Utils.randomBetween(-3, 3),
+        vx: Math.cos(angle) * velocity,
+        vy: Math.sin(angle) * velocity,
+        life,
+        maxLife: life,
+      });
+    }
   }
 }

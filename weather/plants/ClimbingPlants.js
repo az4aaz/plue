@@ -1,4 +1,5 @@
 import { Utils } from "../constants.js";
+import { LightingCalculator } from "../utils/LightingCalculator.js";
 
 export class ClimbingPlants {
   constructor(grid, lights, options = {}) {
@@ -13,9 +14,13 @@ export class ClimbingPlants {
     this.generatePlants();
     this.pixels = Array.from(this.pixelMap.values());
 
-    this.cachedLightPositions = [];
-    this.cachedShadedColors = new Map();
-    this.lightMovementThreshold = 2;
+    this.lightingCalculator = new LightingCalculator(grid, lights, {
+      lightMovementThreshold: 2
+    });
+  }
+
+  get cachedShadedColors() {
+    return this.lightingCalculator.cachedShadedColors;
   }
 
   generatePlants() {
@@ -179,66 +184,10 @@ export class ClimbingPlants {
     return Math.min(this.grid.height - 1, Math.max(0, y));
   }
 
-  haveLightsMoved() {
-    if (this.cachedLightPositions.length !== this.lights.length) {
-      return true;
-    }
-    for (let i = 0; i < this.lights.length; i++) {
-      const light = this.lights[i];
-      const cached = this.cachedLightPositions[i];
-      const dx = Math.abs((light.cachedNeoX || light.x) - cached.x);
-      const dy = Math.abs((light.cachedNeoY || light.y) - cached.y);
-      if (dx > this.lightMovementThreshold || dy > this.lightMovementThreshold) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  updateCachedLightPositions() {
-    this.cachedLightPositions = this.lights.map((light) => ({
-      x: light.cachedNeoX || light.x,
-      y: light.cachedNeoY || light.y,
-    }));
-  }
-
   render() {
-    if (!this.pixels.length) {
-      return;
-    }
-
-    const lightsHaveMoved = this.haveLightsMoved();
-
-    for (const pixel of this.pixels) {
-      const pixelKey = `${pixel.x},${pixel.y}`;
-      let shadedColor;
-
-      if (!lightsHaveMoved && this.cachedShadedColors.has(pixelKey)) {
-        shadedColor = this.cachedShadedColors.get(pixelKey);
-      } else {
-        let minDistance = Infinity;
-        for (const light of this.lights) {
-          const distance = light.distance(pixel.x, pixel.y);
-          if (distance < minDistance) {
-            minDistance = distance;
-            if (minDistance < 0.3) break;
-          }
-        }
-
-        shadedColor =
-          minDistance !== Infinity
-            ? Utils.dimColor(pixel.color, minDistance, this.grid.resolution)
-            : pixel.color;
-
-        this.cachedShadedColors.set(pixelKey, shadedColor);
-      }
-
-      this.grid.setPixel(pixel.x, pixel.y, shadedColor);
-    }
-
-    if (lightsHaveMoved) {
-      this.updateCachedLightPositions();
-    }
+    this.lightingCalculator.render(this.pixels, (px, color) => {
+      this.grid.setPixel(px.x, px.y, color);
+    });
   }
 
   randomLength(min, max) {

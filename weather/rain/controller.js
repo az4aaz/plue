@@ -17,9 +17,31 @@ export class RainController {
     this.grid = grid;
     this.mouse = mouse;
     this.lights = lights;
+    this.aura = Array.isArray(lights)
+      ? lights.find((light) => light && light.isAura)
+      : null;
     this.raindrops = [];
     this.splashes = [];
     this.frameCounter = 0;
+    this.spawnRate = Math.max(0, Number(Utils.CONSTANTS.RAIN?.DROPS_PER_FRAME ?? 1));
+    this.spawnAccumulator = 0;
+    this.isActive = true;
+    this.mouseHeld = false;
+    this.auraPulseFrames = 0;
+    this.auraPulseOrbitSpeed = 0.8;
+    this.auraPulseRadius = 0;
+    this.auraRadiusMultiplier = Utils.CONSTANTS.AURA.DEFAULTS.radiusMultiplier;
+    this.auraAttractionStrength = Utils.CONSTANTS.AURA.DEFAULTS.attractionStrength;
+    this.windIntensity = Utils.CONSTANTS.PHYSICS.WIND.INTENSITY_MULTIPLIER ?? 1;
+    this.windAngleDeg = Utils.CONSTANTS.WIND.DEFAULT_ANGLE_DEG ?? -12;
+    const angleRad = (this.windAngleDeg * Math.PI) / 180;
+    this.windDirection = {
+      x: Math.cos(angleRad),
+      y: Math.sin(angleRad),
+    };
+    const windX = this.windDirection.x * this.windIntensity * Utils.CONSTANTS.PHYSICS.WIND.VARIATION_STRENGTH;
+    const windY = this.windDirection.y * this.windIntensity * 0.05;
+    this.currentWindForce = { x: windX, y: windY };
 
     window.addEventListener("raindropCollision", (e) => {
       this.handleSplashCollision(e.detail);
@@ -31,6 +53,10 @@ export class RainController {
    */
   generateRaindrop() {
     const newDrop = new Raindrop(this.grid, this.mouse, this.lights);
+    if (!newDrop.windForce) {
+      newDrop.windForce = { ...this.currentWindForce };
+    }
+    newDrop.updateWind(this.currentWindForce);
     this.raindrops.push(newDrop);
   }
 
@@ -128,12 +154,116 @@ export class RainController {
    * Updates and renders the raindrops and splashes.
    */
   updateAndRender() {
-    if (this.frameCounter % 2 === 0) {
-      this.generateRaindrop();
+    if (this.auraPulseFrames > 0 && this.aura) {
+      this.applyAuraPulseEffect();
+      this.auraPulseFrames--;
+    }
+
+    if (this.isActive) {
+      this.spawnAccumulator += this.spawnRate;
+      while (this.spawnAccumulator >= 1) {
+        this.generateRaindrop();
+        this.spawnAccumulator -= 1;
+      }
     }
     this.frameCounter++;
     this.moveRaindrops();
     this.moveSplashes();
+  }
+
+  setSpawnRate(value) {
+    const numeric = Number(value);
+    const clamped = Math.max(0, Number.isNaN(numeric) ? this.spawnRate : numeric);
+    this.spawnRate = clamped;
+  }
+
+  setActive(active) {
+    this.isActive = Boolean(active);
+    if (!this.isActive) {
+      // Allow existing drops to finish without spawning new ones
+      this.frameCounter = 0;
+      this.spawnAccumulator = 0;
+    }
+  }
+
+  clear() {
+    this.raindrops.length = 0;
+    this.splashes.length = 0;
+  }
+
+  setMouseHeld(isHeld) {
+    this.mouseHeld = Boolean(isHeld);
+    if (!this.mouseHeld) {
+      this.releaseOrbitingDrops();
+    }
+  }
+
+  setAuraRadiusMultiplier(multiplier) {
+    this.auraRadiusMultiplier = Math.max(0.1, multiplier);
+  }
+
+  setAuraAttraction(strength) {
+    this.auraAttractionStrength = Math.max(0.01, strength);
+  }
+
+  setWindIntensity(value, angleDeg = this.windAngleDeg) {
+    this.windIntensity = Math.max(0, value ?? 0);
+    this.windAngleDeg = angleDeg;
+    const angleRad = (this.windAngleDeg * Math.PI) / 180;
+    this.windDirection = {
+      x: Math.cos(angleRad),
+      y: Math.sin(angleRad),
+    };
+    const windX = this.windDirection.x * this.windIntensity * Utils.CONSTANTS.PHYSICS.WIND.VARIATION_STRENGTH;
+    const windY = this.windDirection.y * this.windIntensity * 0.05;
+    this.currentWindForce = { x: windX, y: windY };
+  }
+
+  startAuraPulse(frames, speedMultiplier = 1, radiusMultiplier = 2) {
+    if (!this.aura) return;
+    this.auraPulseFrames = Math.max(this.auraPulseFrames, Math.floor(frames));
+    const baseSpeed = 0.6;
+    this.auraPulseOrbitSpeed = baseSpeed * speedMultiplier;
+    const baseRadius = this.aura.radius / this.grid.resolution;
+    const multiplier = Math.max(0.1, radiusMultiplier ?? this.auraRadiusMultiplier);
+    const mouseRadius = Utils.CONSTANTS.MOUSE.RADIUS * 0.4;
+    this.auraPulseRadius = baseRadius * multiplier + mouseRadius;
+  }
+
+  applyAuraPulseEffect() {
+    if (!this.aura || !this.mouseHeld) return;
+    const centerX = this.aura.x / this.grid.resolution;
+    const centerY = this.aura.y / this.grid.resolution;
+    const radius =
+      this.auraPulseRadius || (this.aura.radius / this.grid.resolution);
+    if (!Number.isFinite(radius) || radius <= 0) {
+      return;
+    }
+
+    const baseAttraction = 0.09;
+    for (const drop of this.raindrops) {
+      const dx = drop.x - centerX;
+      const dy = drop.y - centerY;
+      const distance = Math.hypot(dx, dy);
+      if (distance < radius) {
+        if (!drop.isPhysicsActive()) {
+          drop.enablePhysics();
+        }
+        const proximity = 1 - distance / Math.max(radius, 1);
+        const attraction = this.auraAttractionStrength * (0.6 + proximity * 1.2);
+        const orbitImpulse = this.auraPulseOrbitSpeed * (0.22 + proximity * 0.4);
+        drop.setAnchor({ x: centerX, y: centerY }, attraction, orbitImpulse, this.windIntensity);
+      }
+    }
+  }
+
+  releaseOrbitingDrops() {
+    const fallSpeed = Utils.calculateSpeed(this.grid.resolution) * 0.85;
+    for (const drop of this.raindrops) {
+      if (drop && drop.isPhysicsActive()) {
+        drop.clearAnchor(fallSpeed);
+      }
+    }
   }
 
   /**

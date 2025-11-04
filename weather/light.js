@@ -10,6 +10,7 @@ export class LightSource {
     this.mouse = mouse;
     this.radius = radius;
     this.color = color;
+    this.tintColor = Utils.parseRgba(color) || { r: 255, g: 255, b: 255 };
     this.x = this.mouse.x;
     this.y = this.mouse.y;
     this.lightingArea = (radius * 3) / this.grid.resolution;
@@ -21,7 +22,29 @@ export class LightSource {
    * Renders the light source.
    */
   render() {
-    this.grid.p.fill(this.color);
+    let renderColor = this.color;
+    const lighting = Utils.CONSTANTS.LIGHTING || {};
+    const multiplier =
+      typeof lighting.INTENSITY_MULTIPLIER === "number"
+        ? lighting.INTENSITY_MULTIPLIER
+        : 1;
+    if (renderColor.includes("rgba")) {
+      const lastComma = renderColor.lastIndexOf(",");
+      const endParen = renderColor.lastIndexOf(")");
+      if (lastComma !== -1 && endParen !== -1) {
+        const baseAlpha = parseFloat(
+          renderColor.substring(lastComma + 1, endParen)
+        );
+        if (!Number.isNaN(baseAlpha)) {
+          const adjustedAlpha = Math.min(
+            1,
+            Math.max(0, baseAlpha * multiplier)
+          );
+          renderColor = `${renderColor.substring(0, lastComma)}, ${adjustedAlpha})`;
+        }
+      }
+    }
+    this.grid.p.fill(renderColor);
     this.grid.p.ellipse(this.x, this.y, this.radius, this.radius);
   }
 
@@ -69,6 +92,16 @@ export class SuspendedLantern extends LightSource {
 
     this.cachedLanternX = Math.floor(this.lantern.position.x / this.grid.resolution);
     this.cachedLanternY = Math.floor(this.lantern.position.y / this.grid.resolution);
+    this.connectedLights = null;
+  }
+
+  setLights(lights) {
+    this.connectedLights = lights;
+    if (Array.isArray(this.chainLinks)) {
+      for (const link of this.chainLinks) {
+        link.setLights(lights);
+      }
+    }
   }
 
   generateLantern() {
@@ -103,7 +136,15 @@ export class SuspendedLantern extends LightSource {
         x = Math.floor(this.chainLinks[i - 1].position.x);
         y = Math.floor(this.chainLinks[i - 1].position.y + this.chainLinkProperties.length);
       }
-      let link = new ChainLink(this.grid, x, y, this.chainLinkProperties.mass, this.chainLinkProperties.length, "rgba(255, 255, 255, 1)");
+      let link = new ChainLink(
+        this.grid,
+        x,
+        y,
+        this.chainLinkProperties.mass,
+        this.chainLinkProperties.length,
+        this.connectedLights,
+        "rgba(255, 255, 255, 1)"
+      );
       this.chainLinks.push(link);
       if (i > 0) {
         const constraint = new Constraint(this.chainLinks[i - 1], this.chainLinks[i], this.chainLinkProperties.length, 0.9);
